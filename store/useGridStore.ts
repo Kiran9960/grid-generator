@@ -47,13 +47,18 @@ export interface GridState extends GridStateSnapshot {
   activeCategory: string | null;
   hasChanges: boolean;
   categoryStates: Record<string, GridStateSnapshot>;
-  
+  showRulers: boolean;
+  showGapLines: boolean;
+  minRows: number;
+  rowHeightAuto: boolean;
+
   // Actions
   setColumns: (columns: number) => void;
   setGap: (gap: number) => void;
   setRowHeight: (height: number) => void;
   setItems: (items: GridItem[]) => void;
   addItem: (item: GridItem) => void;
+  duplicateItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<GridItem>) => void;
   updateSelectedItems: (updates: Partial<GridItem>) => void;
   deleteItems: (ids: string[]) => void;
@@ -68,6 +73,10 @@ export interface GridState extends GridStateSnapshot {
   setActiveCategory: (categoryId: string | null) => void;
   setHasChanges: (hasChanges: boolean) => void;
   setCategoryStates: (states: Record<string, GridStateSnapshot>) => void;
+  toggleRulers: () => void;
+  toggleGapLines: () => void;
+  setMinRows: (rows: number) => void;
+  toggleRowHeightAuto: () => void;
 
   // History
   saveSnapshot: () => void;
@@ -156,6 +165,10 @@ export const useGridStore = create<GridState>((set, get) => ({
   activeCategory: 'hero-sections',
   hasChanges: false,
   categoryStates: {},
+  showRulers: true,
+  showGapLines: true,
+  minRows: 4,
+  rowHeightAuto: false,
 
   saveSnapshot: () => set((state) => {
     const currentSnapshot = getSnapshot(state);
@@ -217,6 +230,18 @@ export const useGridStore = create<GridState>((set, get) => ({
     set((state) => {
       if (state.items.length >= 12) return state;
       return { items: [...state.items, item], selectedIds: [item.id], hasChanges: true };
+    });
+  },
+  duplicateItem: (id) => {
+    get().saveSnapshot();
+    set((state) => {
+      if (state.items.length >= 12) return state;
+      const idx = state.items.findIndex(item => item.id === id);
+      if (idx === -1) return state;
+      const copy = { ...state.items[idx], id: `item-${Date.now()}` };
+      const newItems = [...state.items];
+      newItems.splice(idx + 1, 0, copy);
+      return { items: newItems, selectedIds: [copy.id], hasChanges: true };
     });
   },
   updateItem: (id, updates) => {
@@ -291,4 +316,8 @@ export const useGridStore = create<GridState>((set, get) => ({
   setActiveCategory: (categoryId) => set({ activeCategory: categoryId }),
   setHasChanges: (hasChanges) => set({ hasChanges }),
   setCategoryStates: (states) => set({ categoryStates: states }),
+  toggleRulers: () => set((state) => ({ showRulers: !state.showRulers })),
+  toggleGapLines: () => set((state) => ({ showGapLines: !state.showGapLines })),
+  setMinRows: (minRows) => set({ minRows }),
+  toggleRowHeightAuto: () => set((state) => ({ rowHeightAuto: !state.rowHeightAuto })),
 }));

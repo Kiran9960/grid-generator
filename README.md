@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Grid Generator
+
+An interactive visual builder for creating grid-based layouts and exporting production-friendly code.
+
+Built with Next.js, React, TypeScript, Zustand, and `dnd-kit`, this project lets you compose layouts visually, tweak spacing and spans, preview responsive behavior, and export the result as code.
+
+## Features
+
+- Drag-and-drop grid item reordering
+- Resize items by column span and row span
+- Layout presets for faster starting points
+- Responsive preview modes for desktop, tablet, and mobile
+- Property editing for selected grid items
+- Undo and redo history
+- Light and dark theme support
+- Export to Tailwind, CSS/HTML, and JSX
+
+## Tech Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Zustand
+- `@dnd-kit`
+- Tailwind CSS 4
+- Framer Motion
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000` in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```text
+app/                        App router entry and global styles
+components/dashboard/       Toolbar, sidebars, export modal
+components/editor/          Canvas and interactive grid components
+store/                      Zustand grid state management
+lib/                        Presets and shared utilities
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How It Works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Choose a preset or start from the default layout.
+2. Add, remove, drag, and resize items in the canvas.
+3. Adjust columns, gaps, row height, and item styling from the UI.
+4. Preview the layout across device sizes.
+5. Export the generated structure as code.
 
-## Deploy on Vercel
+## Export Formats
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The app currently supports:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Tailwind component output
+- HTML + CSS Grid output
+- JSX + CSS output
+
+## Notes
+
+- Generated folders like `.next` and dependencies in `node_modules` are ignored by Git.
+- This repository is set up as a standalone Git project and connected to GitHub.
+
+## Roadmap Ideas
+
+- Save and load custom layouts
+- Import existing grid definitions
+- Copy-to-clipboard feedback per export format
+- More preset categories and item style controls
+- Image and rich content blocks
+
+## License
+
+Add a license if you plan to open-source or distribute the project publicly.

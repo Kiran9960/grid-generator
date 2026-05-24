@@ -1,205 +1,234 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
-  LayoutTemplate,
-  Briefcase,
-  User,
-  Users,
-  Box,
-  FileText,
-  Image as ImageIcon,
-  LayoutList,
-  CheckSquare,
-  ShoppingCart,
-  Search,
-  X,
-} from "lucide-react";
-import { useGridStore } from "@/store/useGridStore";
-import { PRESET_CATEGORIES, LAYOUT_PRESETS } from "@/lib/presets";
+  LayoutDashboard, LayoutTemplate, Briefcase, User, Users,
+  Box, FileText, Image as ImageIcon, LayoutList, CheckSquare,
+  ShoppingCart, Search, X, PanelLeftClose, PanelLeftOpen,
+} from "lucide-react"
+import { useGridStore } from "@/store/useGridStore"
+import { PRESET_CATEGORIES, LAYOUT_PRESETS } from "@/lib/presets"
 
-// Define a proper type for icon map to fix the any error
-type IconType = React.ElementType;
+type IconType = React.ElementType
 
 const iconMap: Record<string, IconType> = {
-  LayoutDashboard,
-  User,
-  Users,
-  LayoutList,
-  Box,
-  Briefcase,
-  FileText,
-  Image: ImageIcon,
-  CheckSquare,
-  LayoutTemplate,
-  ShoppingCart,
-};
+  LayoutDashboard, User, Users, LayoutList, Box,
+  Briefcase, FileText, Image: ImageIcon, CheckSquare, LayoutTemplate, ShoppingCart,
+}
 
 export function LeftSidebar() {
-  const [search, setSearch] = useState("");
-  const { 
-    setItems, 
-    setColumns, 
-    setGap, 
-    setRowHeight, 
-    isSidebarOpen, 
-    toggleSidebar,
-    activeCategory,
-    setActiveCategory,
-    hasChanges,
-    setHasChanges,
-    setCategoryStates
-  } = useGridStore();
+  const [search, setSearch] = useState("")
+  const [expanded, setExpanded] = useState(true)
+  const {
+    setItems, setColumns, setGap, setRowHeight,
+    isSidebarOpen, toggleSidebar,
+    activeCategory, setActiveCategory,
+    setHasChanges, setCategoryStates
+  } = useGridStore()
 
   const handleLoadPreset = (presetId: string) => {
-    const preset = LAYOUT_PRESETS.find((p) => p.id === presetId);
+    const preset = LAYOUT_PRESETS.find((p) => p.id === presetId)
     if (preset) {
-      const clonedItems = JSON.parse(JSON.stringify(preset.items));
-      setColumns(preset.columns);
-      setGap(preset.gap);
-      setRowHeight(preset.rowHeight);
-      setItems(clonedItems);
-      setActiveCategory(preset.categoryId);
-      setHasChanges(false);
+      setColumns(preset.columns)
+      setGap(preset.gap)
+      setRowHeight(preset.rowHeight)
+      setItems(JSON.parse(JSON.stringify(preset.items)))
+      setActiveCategory(preset.categoryId)
+      setHasChanges(false)
     }
-  };
+  }
 
   const filteredPresets = LAYOUT_PRESETS.filter((p) => {
-    const category = PRESET_CATEGORIES.find(c => c.id === p.categoryId);
+    const category = PRESET_CATEGORIES.find((c) => c.id === p.categoryId)
     return (
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       category?.name.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+    )
+  })
 
   return (
     <>
-      {/* Mobile overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-20 lg:hidden"
+        <div
+          className="fixed inset-0 bg-black/30 z-20 lg:hidden"
           onClick={toggleSidebar}
         />
       )}
 
+      {/* Icon rail — always visible on desktop */}
+      <div className="hidden lg:flex flex-col items-center w-12 border-r border-border bg-background shrink-0 py-3 gap-1">
+        {/* Collapse / expand toggle */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          title={expanded ? 'Collapse panel' : 'Expand panel'}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mb-1"
+        >
+          {expanded ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+        </button>
+
+        <div className="w-5 h-px bg-border mb-1" />
+
+        {PRESET_CATEGORIES.map((cat) => {
+          const Icon = iconMap[cat.icon] || LayoutTemplate
+          const isSelected = activeCategory === cat.id
+          return (
+            <button
+              key={cat.id}
+              title={cat.name}
+              onClick={() => {
+                const state = useGridStore.getState()
+                if (state.activeCategory) {
+                  setCategoryStates({
+                    ...state.categoryStates,
+                    [state.activeCategory]: {
+                      columns: state.columns, gap: state.gap,
+                      rowHeight: state.rowHeight, items: state.items,
+                    },
+                  })
+                }
+                setActiveCategory(cat.id)
+                const updated = useGridStore.getState()
+                const saved = updated.categoryStates[cat.id]
+                const catPresets = LAYOUT_PRESETS.filter(p => p.categoryId === cat.id)
+                if (saved) {
+                  setColumns(saved.columns); setGap(saved.gap)
+                  setRowHeight(saved.rowHeight); setItems(saved.items)
+                  setHasChanges(true)
+                } else if (catPresets.length > 0) {
+                  handleLoadPreset(catPresets[0].id)
+                }
+              }}
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                isSelected
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <Icon size={16} />
+            </button>
+          )
+        })}
+      </div>
+
       <aside className={cn(
-        "fixed lg:static inset-y-0 left-0 w-72 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/95 dark:bg-zinc-950/95 backdrop-blur-xl lg:bg-zinc-50/50 lg:dark:bg-zinc-950 flex flex-col shrink-0 z-30 transition-transform duration-300",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "fixed lg:static inset-y-0 left-0 border-r border-border bg-background/95 backdrop-blur-xl lg:bg-background flex flex-col shrink-0 z-30 transition-all duration-300 overflow-hidden",
+        // Mobile: slide in/out
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        // Desktop: collapse width
+        expanded ? "w-64" : "lg:w-0 lg:border-0"
       )}>
-        <div className="flex items-center justify-between p-4 lg:hidden border-b border-zinc-200 dark:border-zinc-800">
+        {/* Mobile header */}
+        <div className="flex items-center justify-between p-4 lg:hidden border-b border-border">
           <span className="font-semibold text-sm">Templates</span>
-          <button 
+          <button
             onClick={toggleSidebar}
-            className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+        {/* Sidebar header */}
+        <div className="px-4 pt-4 pb-2 border-b border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Templates</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {/* Search */}
           <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-            />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search templates..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow shadow-sm"
+              className="w-full bg-muted border border-border rounded-md py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors"
             />
           </div>
 
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 border-y sm:border border-zinc-100 dark:border-zinc-800/60 sm:rounded-lg bg-white dark:bg-zinc-900/30">
+          {/* Template list */}
+          <div className="space-y-0.5">
             {PRESET_CATEGORIES.map((cat) => {
-              const catPresets = filteredPresets.filter(
-                (p) => p.categoryId === cat.id,
-              );
-              if (catPresets.length === 0) return null;
+              const catPresets = filteredPresets.filter((p) => p.categoryId === cat.id)
+              if (catPresets.length === 0) return null
 
-              const Icon = iconMap[cat.icon] || LayoutTemplate;
-
-              const isSelected = activeCategory === cat.id;
+              const Icon = iconMap[cat.icon] || LayoutTemplate
+              const isSelected = activeCategory === cat.id
 
               return (
-                <div key={cat.id} className="px-2 py-1">
-                  <a
-                    href={`#${cat.id}`}
-                    onClick={(e) => {
-                      e.preventDefault();
+                <a
+                  key={cat.id}
+                  href={`#${cat.id}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const state = useGridStore.getState()
 
-                      const state = useGridStore.getState();
-                      
-                      // Save current state for the current active category
-                      if (state.activeCategory) {
-                        const newCategoryStates = { ...state.categoryStates };
-                        newCategoryStates[state.activeCategory] = {
+                    if (state.activeCategory) {
+                      setCategoryStates({
+                        ...state.categoryStates,
+                        [state.activeCategory]: {
                           columns: state.columns,
                           gap: state.gap,
                           rowHeight: state.rowHeight,
-                          items: state.items
-                        };
-                        setCategoryStates(newCategoryStates);
-                      }
+                          items: state.items,
+                        },
+                      })
+                    }
 
-                      setActiveCategory(cat.id);
+                    setActiveCategory(cat.id)
 
-                      // Try to load saved state for the new category
-                      const stateAfterUpdate = useGridStore.getState();
-                      const savedState = stateAfterUpdate.categoryStates[cat.id];
-                      
-                      if (savedState) {
-                        setColumns(savedState.columns);
-                        setGap(savedState.gap);
-                        setRowHeight(savedState.rowHeight);
-                        setItems(savedState.items);
-                        // We still consider it as having changes since it's a restored unsaved state
-                        setHasChanges(true);
-                      } else if (catPresets.length > 0) {
-                        handleLoadPreset(catPresets[0].id);
-                      }
-                      
-                      if (window.innerWidth < 1024) {
-                        toggleSidebar();
-                      }
-                    }}
-                    className={`flex items-center gap-3 py-2 px-3 rounded-lg group transition-colors ${
-                      isSelected
-                        ? "bg-blue-50 dark:bg-blue-500/10"
-                        : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                    }`}
-                  >
-                    <div className={`p-1.5 rounded-md transition-colors ${
-                      isSelected
-                        ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                        : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
-                    }`}>
-                      <Icon size={16} />
-                    </div>
-                    <h3 className={`text-sm font-medium transition-colors ${
-                      isSelected
-                        ? "text-blue-700 dark:text-blue-400"
-                        : "text-zinc-600 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100"
-                    }`}>
-                      {cat.name}
-                    </h3>
-                  </a>
-                </div>
-              );
+                    const updated = useGridStore.getState()
+                    const saved = updated.categoryStates[cat.id]
+
+                    if (saved) {
+                      setColumns(saved.columns)
+                      setGap(saved.gap)
+                      setRowHeight(saved.rowHeight)
+                      setItems(saved.items)
+                      setHasChanges(true)
+                    } else if (catPresets.length > 0) {
+                      handleLoadPreset(catPresets[0].id)
+                    }
+
+                    if (window.innerWidth < 1024) toggleSidebar()
+                  }}
+                  className={cn(
+                    "flex items-center gap-2.5 py-2 px-2.5 rounded-lg group transition-colors",
+                    isSelected ? "bg-primary/10" : "hover:bg-muted/60"
+                  )}
+                >
+                  <div className={cn(
+                    "w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors",
+                    isSelected
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground group-hover:text-foreground"
+                  )}>
+                    <Icon size={14} />
+                  </div>
+                  <span className={cn(
+                    "text-xs font-medium transition-colors truncate",
+                    isSelected ? "text-primary" : "text-foreground/70 group-hover:text-foreground"
+                  )}>
+                    {cat.name}
+                  </span>
+                  {isSelected && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  )}
+                </a>
+              )
             })}
+
             {filteredPresets.length === 0 && (
-              <div className="text-center text-zinc-400 dark:text-zinc-500 text-sm py-8 bg-white dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
-                No layouts found matching <br />
-                <span className="font-medium text-zinc-600 dark:text-zinc-300 mt-1 inline-block">
-                  "{search}"
-                </span>
+              <div className="text-center text-muted-foreground text-xs py-8 px-4">
+                No layouts found for{" "}
+                <span className="font-medium text-foreground">"{search}"</span>
               </div>
             )}
           </div>
         </div>
       </aside>
     </>
-  );
+  )
 }

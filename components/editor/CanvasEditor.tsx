@@ -9,35 +9,20 @@ export function CanvasEditor() {
   const { clearSelection, previewMode, deleteItems, selectedIds, undo, redo } = useGridStore()
 
   const handleCanvasClick = (e: MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      clearSelection()
-    }
+    if (e.target === e.currentTarget) clearSelection()
   }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedIds.length > 0) {
-          deleteItems(selectedIds)
-        }
+        if (selectedIds.length > 0) deleteItems(selectedIds)
       }
-
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        if (e.shiftKey) {
-          redo()
-        } else {
-          undo()
-        }
+        e.shiftKey ? redo() : undo()
       }
-      
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        redo()
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') redo()
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -45,19 +30,26 @@ export function CanvasEditor() {
   }, [selectedIds, deleteItems, undo, redo])
 
   return (
-    <div 
-      className="h-full p-8 md:p-12 lg:p-24 flex items-start justify-center overflow-auto"
+    <div
+      className="h-full overflow-y-auto overflow-x-auto"
+      style={{
+        // Dot pattern canvas background — visible in gaps & empty space
+        backgroundImage: `radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px)`,
+        backgroundSize: '20px 20px',
+      }}
       onClick={handleCanvasClick}
     >
-      <div 
-        className={cn(
-          "w-full h-full mx-auto transition-all duration-500 ease-in-out relative",
-          previewMode === 'desktop' ? "max-w-6xl" :
-          previewMode === 'tablet' ? "max-w-[768px]" :
-          "max-w-[375px]" // Mobile
-        )}
-      >
-        <GridContainer />
+      <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-12 lg:px-16 lg:pt-20 lg:pb-16 flex justify-center">
+        <div
+          className={cn(
+            "w-full mx-auto transition-all duration-500 ease-in-out",
+            previewMode === 'desktop' ? "max-w-6xl" :
+            previewMode === 'tablet' ? "max-w-[768px]" :
+            "max-w-[375px]"
+          )}
+        >
+          <GridContainer />
+        </div>
       </div>
     </div>
   )

@@ -26,15 +26,15 @@ export default function DashboardPage() {
   }, [theme])
 
   if (!isHydrated) {
-    return <div className="flex h-screen w-full bg-white dark:bg-zinc-950 items-center justify-center"></div>
+    return <div className="flex h-screen w-full bg-background items-center justify-center" />
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white overflow-hidden font-sans">
+    <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden font-sans">
       <TopToolbar />
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         <LeftSidebar />
-        <main className="flex-1 overflow-hidden bg-zinc-50 dark:bg-zinc-900/50 relative">
+        <main className="flex-1 overflow-hidden bg-muted/30 relative">
           <CanvasEditor />
         </main>
         <RightProperties />

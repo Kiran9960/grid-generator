@@ -5,20 +5,21 @@ import { cn } from "@/lib/utils";
 import { MouseEvent, PointerEvent, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, Type, Image as ImageIcon, Eraser } from "lucide-react";
+import { Trash2, Type, Image as ImageIcon, Eraser, Copy } from "lucide-react";
 
 interface GridItemProps {
   item: GridItem;
-  isDragging?: boolean;
+  isOverflow?: boolean;
 }
 
-export function GridItemComponent({ item, isDragging }: GridItemProps) {
+export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
   const {
     selectedIds,
     setSelectedIds,
     toggleSelection,
     updateItem,
     deleteItems,
+    duplicateItem,
     columns,
     gap,
     rowHeight,
@@ -54,24 +55,13 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
   const currentRowSpan = dragSpan?.rowSpan ?? item.rowSpan;
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition:
-      isSortableDragging || isDragging
-        ? transition
-        : dragSpan
-          ? "none"
-          : transition,
+    // Don't move the placeholder — DragOverlay handles the moving ghost
+    transform: isSortableDragging ? undefined : CSS.Transform.toString(transform),
+    transition: isSortableDragging ? undefined : dragSpan ? "none" : transition,
     gridColumn: `span ${currentColSpan} / span ${currentColSpan}`,
     gridRow: `span ${currentRowSpan} / span ${currentRowSpan}`,
-    zIndex:
-      isSortableDragging || isDragging
-        ? 50
-        : dragSpan
-          ? 40
-          : isSelected
-            ? 10
-            : 1,
-    opacity: isSortableDragging || isDragging ? 0.5 : item.styles.opacity / 100,
+    zIndex: isSortableDragging ? 50 : dragSpan ? 40 : isSelected ? 10 : 1,
+    opacity: isSortableDragging ? 0.15 : isOverflow ? 0.4 : item.styles.opacity / 100,
     backgroundColor: item.styles.bg.startsWith("#")
       ? item.styles.bg
       : undefined,
@@ -89,6 +79,11 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
   const handleDelete = (e: MouseEvent) => {
     e.stopPropagation();
     deleteItems([item.id]);
+  };
+
+  const handleDuplicate = (e: MouseEvent) => {
+    e.stopPropagation();
+    duplicateItem(item.id);
   };
 
   const handleSetContentType = (
@@ -111,7 +106,7 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
     const startRowSpan = item.rowSpan;
 
     const target = e.currentTarget as HTMLElement;
-    const parent = target.closest(".grid") as HTMLElement;
+    const parent = document.getElementById("grid-items-container") as HTMLElement;
     if (!parent) return;
 
     const colWidth = (parent.clientWidth - (columns - 1) * gap) / columns;
@@ -166,14 +161,18 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
       {...listeners}
       className={cn(
         "group @container relative overflow-hidden transition-all duration-200 cursor-grab active:cursor-grabbing border-2",
-        !item.styles.bg.startsWith("#") && item.styles.bg,
-        item.styles.textColor,
+        isSortableDragging
+          ? "border-dashed border-primary/50 bg-primary/5 shadow-none!"
+          : cn(
+              !item.styles.bg.startsWith("#") && item.styles.bg,
+              item.styles.textColor,
+              item.styles.shadow,
+              isSelected
+                ? "border-primary ring-4 ring-primary/20"
+                : cn(item.styles.border, "hover:border-primary/50"),
+            ),
         item.styles.radius,
-        item.styles.shadow,
         item.content.contentType === "image" ? "p-0" : item.styles.padding,
-        isSelected
-          ? "border-indigo-500 ring-4 ring-indigo-500/20"
-          : cn(item.styles.border, "hover:border-indigo-500/50"),
         item.styles.align === "center"
           ? "text-center"
           : item.styles.align === "right"
@@ -181,6 +180,15 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
             : "text-left",
       )}
     >
+      {/* Overflow badge */}
+      {isOverflow && (
+        <div className="absolute inset-0 pointer-events-none z-30 flex items-start justify-center pt-3">
+          <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-500/90 text-white shadow-sm">
+            Out of grid
+          </span>
+        </div>
+      )}
+
       {/* Content Simulator Controls - Top Left */}
       <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-20">
         <button
@@ -189,7 +197,7 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
             "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
             item.content.contentType !== "image" &&
               item.content.contentType !== "empty"
-              ? "bg-indigo-100 dark:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+              ? "bg-primary/10 text-primary border-primary/30"
               : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
           )}
           title="Text Content"
@@ -201,7 +209,7 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
           className={cn(
             "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
             item.content.contentType === "image"
-              ? "bg-indigo-100 dark:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+              ? "bg-primary/10 text-primary border-primary/30"
               : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
           )}
           title="Image Content"
@@ -213,7 +221,7 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
           className={cn(
             "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
             item.content.contentType === "empty"
-              ? "bg-indigo-100 dark:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+              ? "bg-primary/10 text-primary border-primary/30"
               : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
           )}
           title="Clear Content"
@@ -222,14 +230,23 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
         </button>
       </div>
 
-      {/* Delete Button - Top Right */}
-      <button
-        onClick={handleDelete}
-        className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-sm backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50"
-        title="Delete item"
-      >
-        <Trash2 size={14} />
-      </button>
+      {/* Duplicate + Delete — Top Right */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-20">
+        <button
+          onClick={handleDuplicate}
+          className="p-1.5 rounded-md bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-primary hover:bg-primary/10 shadow-sm backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50 transition-all"
+          title="Duplicate item"
+        >
+          <Copy size={14} />
+        </button>
+        <button
+          onClick={handleDelete}
+          className="p-1.5 rounded-md bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 shadow-sm backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50 transition-all"
+          title="Delete item"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
 
       {/* Content Area */}
       <div
@@ -268,7 +285,7 @@ export function GridItemComponent({ item, isDragging }: GridItemProps) {
       {/* Drag to Resize Handle - Bottom Right */}
       <div
         onPointerDown={handleResizePointerDown}
-        className="absolute bottom-1 right-1 w-6 h-6 cursor-se-resize flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 z-[100] transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute bottom-1 right-1 w-6 h-6 cursor-se-resize flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 z-100 transition-colors opacity-0 group-hover:opacity-100"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
           <circle cx="19" cy="19" r="1.5" />
