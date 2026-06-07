@@ -31,7 +31,7 @@ function Stepper({
       <button
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
-        className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none"
+        className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >−</button>
       <span className="text-xs font-mono text-foreground w-6 text-center tabular-nums select-none">
         {value}{unit}
@@ -39,7 +39,7 @@ function Stepper({
       <button
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
-        className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none"
+        className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >+</button>
     </div>
   )
@@ -87,14 +87,14 @@ export function TopToolbar() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors mr-1"
+              className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Menu size={20} />
             </button>
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <LayoutGrid size={18} className="text-primary-foreground" />
             </div>
-            <span className="hidden sm:inline font-semibold text-sm mr-4">Grid Builder</span>
+            <span className="hidden sm:inline font-semibold text-sm tracking-tight mr-4">Grid Builder</span>
           </div>
 
           {/* History */}
@@ -102,7 +102,7 @@ export function TopToolbar() {
             <button
               onClick={undo}
               disabled={past.length === 0}
-              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={16} />
@@ -110,7 +110,7 @@ export function TopToolbar() {
             <button
               onClick={redo}
               disabled={future.length === 0}
-              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title="Redo (Ctrl+Y)"
             >
               <Redo2 size={16} />
@@ -157,7 +157,7 @@ export function TopToolbar() {
               key={mode}
               onClick={() => setPreviewMode(mode)}
               className={cn(
-                "p-1.5 rounded-md transition-colors",
+                "p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 previewMode === mode
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -175,7 +175,7 @@ export function TopToolbar() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleTheme}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="Toggle Theme"
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
@@ -185,10 +185,10 @@ export function TopToolbar() {
             onClick={handleAdd}
             disabled={items.length >= 12}
             className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2",
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               items.length >= 12
                 ? "text-muted-foreground bg-muted cursor-not-allowed opacity-50"
-                : "text-foreground hover:bg-muted"
+                : "text-foreground border border-border hover:border-primary hover:text-primary"
             )}
             title={items.length >= 12 ? "Maximum 12 items" : "Add Item"}
           >
@@ -197,13 +197,13 @@ export function TopToolbar() {
           <div className="w-px h-6 bg-border mx-1" />
           <button
             onClick={resetLayout}
-            className="px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2"
+            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors duration-150 cursor-pointer flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RefreshCw size={14} /> Reset
           </button>
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors flex items-center gap-2"
+            className="px-3 py-1.5 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors duration-150 cursor-pointer flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Code size={14} /> Export Code
           </button>

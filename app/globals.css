@@ -3,47 +3,53 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ── Canvas / ruler tokens ── */
+
+/* Light mode */
 :root {
+  --canvas-bg: #e8eef5;                    /* clearly distinct from white panels */
+  --canvas-dot: rgba(15,23,42,0.09);
   --ruler-line: rgba(220,38,38,0.22);
-  --ruler-gap: rgba(220,38,38,0.04);
-  --canvas-dot: rgba(0,0,0,0.07);
-  --ruler-chip-bg: rgba(220,38,38,0.85);
+  --ruler-gap: rgba(220,38,38,0.05);
+  --ruler-chip-bg: rgba(220,38,38,0.88);
   --ruler-chip-text: #fff;
-  --gap-strip: rgba(124,58,237,0.2);
-  --gap-chip-bg: rgba(124,58,237,0.85);
+  --gap-strip: rgba(109,40,217,0.10);
+  --gap-chip-bg: rgba(109,40,217,0.88);
   --gap-chip-text: #fff;
 }
+
+/* Dark mode */
 .dark {
+  --canvas-bg: #09090b;
+  --canvas-dot: rgba(255,255,255,0.06);
   --ruler-line: rgba(244,63,94,0.28);
   --ruler-gap: rgba(244,63,94,0.06);
-  --canvas-dot: rgba(255,255,255,0.04);
   --ruler-chip-bg: rgba(244,63,94,0.9);
   --ruler-chip-text: #fff;
-  --gap-strip: rgba(139,92,246,0.25);
+  --gap-strip: rgba(139,92,246,0.22);
   --gap-chip-bg: rgba(139,92,246,0.9);
   --gap-chip-text: #fff;
 }
 
-/* ── Light theme ── */
+/* ── Light theme — Apple-style, refined ── */
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
-  --card: #ffffff;
-  --card-foreground: #09090b;
-  --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #3b82f6;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #3b82f6;
-  --radius: 0.5rem;
+  --background:          #ffffff;     /* toolbar, sidebar, panels — pure white */
+  --foreground:          #0f172a;     /* slate-900 — rich, not harsh black */
+  --card:                #ffffff;
+  --card-foreground:     #0f172a;
+  --popover:             #ffffff;
+  --popover-foreground:  #0f172a;
+  --primary:             #3b82f6;     /* blue-500 — consistent across modes */
+  --primary-foreground:  #ffffff;
+  --secondary:           #f0f4f8;     /* cool neutral — badges, secondary bg */
+  --secondary-foreground:#0f172a;
+  --muted:               #f4f7fa;     /* hover states, input bg, subtle fills */
+  --muted-foreground:    #64748b;     /* slate-500 — clear readable secondary */
+  --accent:              #eff6ff;     /* blue-50 — active highlights */
+  --accent-foreground:   #1d4ed8;     /* blue-700 */
+  --border:              #dde3eb;     /* slate, more visible than default zinc */
+  --input:               #dde3eb;
+  --ring:                #3b82f6;
+  --radius:              0.5rem;
 }
 
 /* ── Dark theme (from design.md) ── */
@@ -85,24 +91,86 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: ui-monospace, 'SF Mono', 'Fira Code', monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, sans-serif;
+  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+* {
+  box-sizing: border-box;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Apple-style scrollbars ── */
+
+/* Global: thin, invisible track, thumb appears on hover/scroll */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.light *:hover,
+:root:not(.dark) *:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
   background: transparent;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+/* Show thumb on scroll container hover */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+.light *:hover::-webkit-scrollbar-thumb,
+:root:not(.dark) *:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* Thumb hover — slightly more opaque, like macOS */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+.light ::-webkit-scrollbar-thumb:hover,
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32) !important;
+}
+
+/* Active (dragging) */
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+.light ::-webkit-scrollbar-thumb:active,
+:root:not(.dark) ::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Corner (where horizontal + vertical scrollbars meet) */
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

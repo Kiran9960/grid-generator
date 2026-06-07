@@ -4,6 +4,9 @@ import { useGridStore } from "@/store/useGridStore"
 import { ArrowLeft, Minus, Plus, Columns3, Rows3, SeparatorHorizontal, RulerIcon, PanelRightClose, PanelRightOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { LAYOUT_OPTIONS } from "@/components/editor/GridItemLayouts"
+import type { GridItemLayout } from "@/store/useGridStore"
+import { ImagePicker } from "@/components/editor/ImagePicker"
 
 const PADDING_OPTIONS = [
   { label: 'None', value: 'p-0' },
@@ -31,29 +34,18 @@ export function RightProperties() {
     : null
 
   return (
-    <div className="hidden lg:flex flex-row-reverse shrink-0">
-      {/* Toggle strip — always visible */}
-      <div className="flex flex-col items-center w-12 border-l border-border bg-background py-3">
-        <button
-          onClick={() => setExpanded(v => !v)}
-          title={expanded ? 'Collapse properties' : 'Expand properties'}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          {expanded ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-        </button>
-      </div>
-
+    <div className="hidden lg:flex h-full shrink-0">
       {/* Panel — collapses to w-0 */}
       <aside className={cn(
-        "flex flex-col border-l border-border bg-background overflow-y-auto overflow-x-hidden transition-all duration-300",
+        "flex flex-col h-full border-l border-border bg-background overflow-y-auto overflow-x-hidden transition-all duration-200",
         expanded ? "w-64" : "w-0 border-0"
       )}>
-      <div className="p-4 border-b border-border flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-border flex items-center gap-2">
         {selectedItem ? (
           <>
             <button
               onClick={clearSelection}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title="Back to grid settings"
             >
               <ArrowLeft size={15} />
@@ -61,31 +53,140 @@ export function RightProperties() {
             <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider">Item Properties</h2>
           </>
         ) : (
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Properties</h2>
+          <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider">Properties</h2>
         )}
       </div>
 
       {selectedItem ? (
         <div className="p-4 space-y-6">
           {/* Content */}
+          {(() => {
+            const layout = selectedItem.content.layout ?? 'text'
+            const isImageLayout = ['image-full','image-top','image-bottom','image-left','image-right','image-overlay'].includes(layout)
+            return (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium">Content</h3>
+                {layout !== 'image-full' && (
+                  <>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={selectedItem.content.title}
+                        onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, title: e.target.value } })}
+                        className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Description</label>
+                      <textarea
+                        value={selectedItem.content.description}
+                        onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, description: e.target.value } })}
+                        className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors min-h-16"
+                      />
+                    </div>
+                  </>
+                )}
+                {(layout === 'hero' || layout === 'image-left' || layout === 'image-right') && (
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">CTA Button</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Get started"
+                      value={selectedItem.content.ctaText ?? ''}
+                      onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, ctaText: e.target.value } })}
+                      className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                    />
+                  </div>
+                )}
+                {layout === 'hero' && (
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Secondary CTA</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Learn more"
+                      value={selectedItem.content.ctaSecondaryText ?? ''}
+                      onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, ctaSecondaryText: e.target.value } })}
+                      className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                    />
+                  </div>
+                )}
+                {layout === 'stat' && (
+                  <>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Stat Value</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. $12.4M"
+                        value={selectedItem.content.stat ?? ''}
+                        onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, stat: e.target.value } })}
+                        className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">Trend</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. +12.5%"
+                        value={selectedItem.content.statTrend ?? ''}
+                        onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, statTrend: e.target.value } })}
+                        className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                      />
+                    </div>
+                  </>
+                )}
+                {(layout === 'hero' || layout === 'image-overlay' || layout === 'image-top' || layout === 'image-bottom' || layout === 'image-left' || layout === 'image-right' || layout === 'feature') && (
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Badge</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. New"
+                      value={selectedItem.content.badge ?? ''}
+                      onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, badge: e.target.value } })}
+                      className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+                    />
+                  </div>
+                )}
+                {isImageLayout && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground block">Image</label>
+                    <ImagePicker
+                      value={selectedItem.content.image}
+                      onChange={(url) => updateItem(selectedItem.id, { content: { ...selectedItem.content, image: url } })}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Layout */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Content</h3>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Title</label>
-              <input
-                type="text"
-                value={selectedItem.content.title}
-                onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, title: e.target.value } })}
-                className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Description</label>
-              <textarea
-                value={selectedItem.content.description}
-                onChange={(e) => updateItem(selectedItem.id, { content: { ...selectedItem.content, description: e.target.value } })}
-                className="w-full bg-muted border border-border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-colors min-h-20"
-              />
+            <h3 className="text-sm font-medium">Layout</h3>
+            <div className="grid grid-cols-5 gap-1">
+              {LAYOUT_OPTIONS.map((opt) => {
+                const isActive = (selectedItem.content.layout ?? 'text') === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    title={opt.label}
+                    onClick={() => updateItem(selectedItem.id, {
+                      content: { ...selectedItem.content, layout: opt.id as GridItemLayout }
+                    })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isActive
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-muted text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    <div className="w-8 h-5">{opt.icon}</div>
+                    <span className="text-[10px] font-medium leading-tight text-center truncate w-full">
+                      {opt.label}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -157,7 +258,7 @@ export function RightProperties() {
                   key={opt.value}
                   onClick={() => updateItem(selectedItem.id, { styles: { ...selectedItem.styles, padding: opt.value } })}
                   className={cn(
-                    "py-1.5 rounded-md text-xs font-medium border transition-colors",
+                    "py-1.5 rounded-md text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     selectedItem.styles.padding === opt.value
                       ? "bg-primary/10 text-primary border-primary/30"
                       : "bg-muted text-muted-foreground border-border hover:text-foreground hover:border-border/80"
@@ -171,18 +272,34 @@ export function RightProperties() {
         </div>
       ) : (
         <div className="p-4 space-y-6">
-          <div className="p-4 text-center border border-dashed border-border rounded-lg">
-            <p className="text-sm text-muted-foreground">Select an item to edit its properties.</p>
+          <div className="rounded-xl bg-muted/40 border border-border/60 p-5 flex flex-col items-center gap-3 text-center">
+            <div className="w-10 h-10 rounded-xl bg-muted border border-border flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-muted-foreground">
+                <rect x="1" y="1" width="6" height="6" rx="1.5" className="fill-current" opacity="0.5" />
+                <rect x="11" y="1" width="6" height="6" rx="1.5" className="fill-current" opacity="0.3" />
+                <rect x="1" y="11" width="6" height="6" rx="1.5" className="fill-current" opacity="0.3" />
+                <rect x="11" y="11" width="6" height="6" rx="1.5" className="fill-current" opacity="0.15" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-foreground/80 mb-1">No item selected</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">Click any grid item to edit its content, layout, and styles.</p>
+            </div>
           </div>
 
           {/* Grid Overlays */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium border-b border-border pb-2">Grid Overlays</h3>
             <div className="space-y-2">
-              <label className="flex items-center justify-between cursor-pointer" onClick={toggleRulers}>
+              <button
+                role="switch"
+                aria-checked={showRulers}
+                onClick={toggleRulers}
+                className="w-full flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
                 <span className="text-xs text-muted-foreground">Ruler lines</span>
                 <div className={cn(
-                  "w-8 h-4 rounded-full transition-colors relative",
+                  "w-8 h-4 rounded-full transition-colors relative shrink-0",
                   showRulers ? "bg-primary" : "bg-muted border border-border"
                 )}>
                   <div className={cn(
@@ -190,11 +307,16 @@ export function RightProperties() {
                     showRulers ? "translate-x-4" : "translate-x-0.5"
                   )} />
                 </div>
-              </label>
-              <label className="flex items-center justify-between cursor-pointer" onClick={toggleGapLines}>
+              </button>
+              <button
+                role="switch"
+                aria-checked={showGapLines}
+                onClick={toggleGapLines}
+                className="w-full flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
                 <span className="text-xs text-muted-foreground">Gap lines</span>
                 <div className={cn(
-                  "w-8 h-4 rounded-full transition-colors relative",
+                  "w-8 h-4 rounded-full transition-colors relative shrink-0",
                   showGapLines ? "bg-primary" : "bg-muted border border-border"
                 )}>
                   <div className={cn(
@@ -202,7 +324,7 @@ export function RightProperties() {
                     showGapLines ? "translate-x-4" : "translate-x-0.5"
                   )} />
                 </div>
-              </label>
+              </button>
             </div>
           </div>
 
@@ -228,7 +350,7 @@ export function RightProperties() {
                     <button
                       onClick={() => (onChange as (v: number) => void)(Math.max(min, value - step))}
                       disabled={value <= min || isDisabled}
-                      className="w-6 h-6 flex items-center justify-center rounded border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-7 h-7 flex items-center justify-center rounded border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Minus size={10} />
                     </button>
@@ -238,7 +360,7 @@ export function RightProperties() {
                     <button
                       onClick={() => (onChange as (v: number) => void)(Math.min(max, value + step))}
                       disabled={value >= max || isDisabled}
-                      className="w-6 h-6 flex items-center justify-center rounded border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-7 h-7 flex items-center justify-center rounded border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Plus size={10} />
                     </button>
@@ -253,7 +375,7 @@ export function RightProperties() {
               <button
                 onClick={toggleRowHeightAuto}
                 className={cn(
-                  "flex items-center gap-1.5 px-2 py-0.5 rounded border text-xs font-medium transition-colors",
+                  "flex items-center gap-1.5 px-2 py-0.5 rounded border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   rowHeightAuto
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted text-muted-foreground border-border hover:text-foreground"
@@ -272,6 +394,17 @@ export function RightProperties() {
         </div>
       )}
       </aside>
+
+      {/* Always-visible toggle strip — button position never jumps */}
+      <div className="flex flex-col items-center border-l border-border bg-background py-3 px-2 shrink-0">
+        <button
+          onClick={() => setExpanded(v => !v)}
+          title={expanded ? "Collapse properties" : "Expand properties"}
+          className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {expanded ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+        </button>
+      </div>
     </div>
   )
 }

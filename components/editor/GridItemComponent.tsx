@@ -1,11 +1,13 @@
 "use client";
 
 import { useGridStore, GridItem } from "@/store/useGridStore";
-import { cn } from "@/lib/utils";
+import { responsiveSpan, responsiveRowSpan, responsivePadding, previewCols } from "@/lib/responsive";
+import { cn, autoTextColor } from "@/lib/utils";
 import { MouseEvent, PointerEvent, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, Type, Image as ImageIcon, Eraser, Copy } from "lucide-react";
+import { Trash2, Copy } from "lucide-react";
+import { GridItemLayoutRenderer } from "./GridItemLayouts";
 
 interface GridItemProps {
   item: GridItem;
@@ -23,14 +25,13 @@ export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
     columns,
     gap,
     rowHeight,
+    rowHeightAuto,
     previewMode,
+    theme,
   } = useGridStore();
-  const isSelected = selectedIds.includes(item.id);
 
-  const [dragSpan, setDragSpan] = useState<{
-    colSpan: number;
-    rowSpan: number;
-  } | null>(null);
+  const isSelected = selectedIds.includes(item.id);
+  const [dragSpan, setDragSpan] = useState<{ colSpan: number; rowSpan: number } | null>(null);
 
   const {
     attributes,
@@ -41,39 +42,55 @@ export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
     isDragging: isSortableDragging,
   } = useSortable({ id: item.id });
 
-  const isMobile = previewMode === "mobile";
-  const isTablet = previewMode === "tablet";
+  const currentLayout = item.content.layout ?? 'text';
 
-  const gridColumns = isMobile
-    ? 1
-    : isTablet
-      ? Math.max(1, Math.floor(columns / 2))
-      : columns;
+  // Compute proportional span: preserve fractional width across column counts.
+  // previewCols gives the simulated column count for tablet/mobile modes;
+  // in desktop mode we use base columns (GridContainer's ResizeObserver handles
+  // the actual rendered column count independently).
+  const effectiveCols = previewMode !== 'desktop'
+    ? previewCols(columns, previewMode)
+    : columns
 
   const rawColSpan = dragSpan?.colSpan ?? item.colSpan;
-  const currentColSpan = Math.min(gridColumns, rawColSpan);
-  const currentRowSpan = dragSpan?.rowSpan ?? item.rowSpan;
+  const rawRowSpan = dragSpan?.rowSpan ?? item.rowSpan;
+  const currentColSpan = responsiveSpan(rawColSpan, columns, effectiveCols, currentLayout);
+  const currentRowSpan = responsiveRowSpan(rawRowSpan, columns, effectiveCols);
+
+  const isPaddingless =
+    currentLayout === 'image-full' ||
+    currentLayout === 'image-overlay' ||
+    currentLayout === 'image-left' ||
+    currentLayout === 'image-right' ||
+    currentLayout === 'image-top' ||
+    currentLayout === 'image-bottom';
+
+  // image-full and image-overlay use position:absolute — no intrinsic height.
+  // In auto-row mode the grid row collapses to 0; anchor it with a min-height
+  // derived from the preset rowHeight × rowSpan so the row sizes correctly.
+  const isAbsoluteImage = currentLayout === 'image-full' || currentLayout === 'image-overlay';
+  const imageMinHeight = rowHeightAuto && isAbsoluteImage
+    ? rowHeight * (item.rowSpan ?? 1) + gap * ((item.rowSpan ?? 1) - 1)
+    : undefined;
+
+  const computedTextColor = autoTextColor(item.styles.bg, theme === 'dark')
 
   const style: React.CSSProperties = {
-    // Don't move the placeholder — DragOverlay handles the moving ghost
     transform: isSortableDragging ? undefined : CSS.Transform.toString(transform),
     transition: isSortableDragging ? undefined : dragSpan ? "none" : transition,
-    gridColumn: `span ${currentColSpan} / span ${currentColSpan}`,
-    gridRow: `span ${currentRowSpan} / span ${currentRowSpan}`,
+    gridColumn: `span ${currentColSpan}`,
+    gridRow: `span ${currentRowSpan}`,
     zIndex: isSortableDragging ? 50 : dragSpan ? 40 : isSelected ? 10 : 1,
     opacity: isSortableDragging ? 0.15 : isOverflow ? 0.4 : item.styles.opacity / 100,
-    backgroundColor: item.styles.bg.startsWith("#")
-      ? item.styles.bg
-      : undefined,
+    backgroundColor: item.styles.bg.startsWith("#") ? item.styles.bg : undefined,
+    color: computedTextColor,
+    minHeight: imageMinHeight,
   };
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
-    if (e.shiftKey) {
-      toggleSelection(item.id);
-    } else {
-      setSelectedIds([item.id]);
-    }
+    if (e.shiftKey) toggleSelection(item.id);
+    else setSelectedIds([item.id]);
   };
 
   const handleDelete = (e: MouseEvent) => {
@@ -86,65 +103,33 @@ export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
     duplicateItem(item.id);
   };
 
-  const handleSetContentType = (
-    e: MouseEvent,
-    type: "text" | "image" | "empty",
-  ) => {
-    e.stopPropagation();
-    updateItem(item.id, {
-      content: { ...item.content, contentType: type },
-    });
-  };
-
   const handleResizePointerDown = (e: PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-
     const startX = e.clientX;
     const startY = e.clientY;
     const startColSpan = item.colSpan;
     const startRowSpan = item.rowSpan;
-
-    const target = e.currentTarget as HTMLElement;
     const parent = document.getElementById("grid-items-container") as HTMLElement;
     if (!parent) return;
-
     const colWidth = (parent.clientWidth - (columns - 1) * gap) / columns;
-
     let currentNewColSpan = startColSpan;
     let currentNewRowSpan = startRowSpan;
 
     const onPointerMove = (moveEvent: globalThis.PointerEvent) => {
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
-
-      const newColSpan = Math.max(
-        1,
-        Math.min(columns, startColSpan + Math.round(deltaX / (colWidth + gap))),
-      );
-      const newRowSpan = Math.max(
-        1,
-        startRowSpan + Math.round(deltaY / (rowHeight + gap)),
-      );
-
-      currentNewColSpan = newColSpan;
-      currentNewRowSpan = newRowSpan;
-
-      setDragSpan({ colSpan: newColSpan, rowSpan: newRowSpan });
+      currentNewColSpan = Math.max(1, Math.min(columns, startColSpan + Math.round(deltaX / (colWidth + gap))));
+      currentNewRowSpan = Math.max(1, startRowSpan + Math.round(deltaY / (rowHeight + gap)));
+      setDragSpan({ colSpan: currentNewColSpan, rowSpan: currentNewRowSpan });
     };
 
     const onPointerUp = () => {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       setDragSpan(null);
-      if (
-        currentNewColSpan !== startColSpan ||
-        currentNewRowSpan !== startRowSpan
-      ) {
-        updateItem(item.id, {
-          colSpan: currentNewColSpan,
-          rowSpan: currentNewRowSpan,
-        });
+      if (currentNewColSpan !== startColSpan || currentNewRowSpan !== startRowSpan) {
+        updateItem(item.id, { colSpan: currentNewColSpan, rowSpan: currentNewRowSpan });
       }
     };
 
@@ -160,24 +145,22 @@ export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
       {...attributes}
       {...listeners}
       className={cn(
-        "group @container relative overflow-hidden transition-all duration-200 cursor-grab active:cursor-grabbing border-2",
+        "group @container relative overflow-hidden transition-all duration-150 cursor-grab active:cursor-grabbing min-h-0 min-w-0",
         isSortableDragging
-          ? "border-dashed border-primary/50 bg-primary/5 shadow-none!"
+          ? "border-dashed border-primary/40 bg-primary/5 shadow-none!"
           : cn(
               !item.styles.bg.startsWith("#") && item.styles.bg,
               item.styles.textColor,
               item.styles.shadow,
               isSelected
-                ? "border-primary ring-4 ring-primary/20"
-                : cn(item.styles.border, "hover:border-primary/50"),
+                ? "border-primary/60 ring-2 ring-primary/20 shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
+                : cn(item.styles.border, "hover:border-primary/40"),
             ),
         item.styles.radius,
-        item.content.contentType === "image" ? "p-0" : item.styles.padding,
-        item.styles.align === "center"
-          ? "text-center"
-          : item.styles.align === "right"
-            ? "text-right"
-            : "text-left",
+        isPaddingless ? "p-0" : responsivePadding(item.styles.padding),
+        item.styles.align === "center" ? "text-center"
+          : item.styles.align === "right" ? "text-right"
+          : "text-left",
       )}
     >
       {/* Overflow badge */}
@@ -189,103 +172,31 @@ export function GridItemComponent({ item, isOverflow = false }: GridItemProps) {
         </div>
       )}
 
-      {/* Content Simulator Controls - Top Left */}
-      <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-20">
-        <button
-          onClick={(e) => handleSetContentType(e, "text")}
-          className={cn(
-            "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
-            item.content.contentType !== "image" &&
-              item.content.contentType !== "empty"
-              ? "bg-primary/10 text-primary border-primary/30"
-              : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-          )}
-          title="Text Content"
-        >
-          <Type size={14} />
-        </button>
-        <button
-          onClick={(e) => handleSetContentType(e, "image")}
-          className={cn(
-            "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
-            item.content.contentType === "image"
-              ? "bg-primary/10 text-primary border-primary/30"
-              : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-          )}
-          title="Image Content"
-        >
-          <ImageIcon size={14} />
-        </button>
-        <button
-          onClick={(e) => handleSetContentType(e, "empty")}
-          className={cn(
-            "p-1.5 rounded-md backdrop-blur-sm transition-all shadow-sm border",
-            item.content.contentType === "empty"
-              ? "bg-primary/10 text-primary border-primary/30"
-              : "bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-zinc-900 dark:hover:text-white border-zinc-200/50 dark:border-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-          )}
-          title="Clear Content"
-        >
-          <Eraser size={14} />
-        </button>
-      </div>
-
-      {/* Duplicate + Delete — Top Right */}
-      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-20">
+      {/* ── Top-right toolbar: Duplicate + Delete ── */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20">
         <button
           onClick={handleDuplicate}
-          className="p-1.5 rounded-md bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-primary hover:bg-primary/10 shadow-sm backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50 transition-all"
-          title="Duplicate item"
+          className="p-1.5 rounded-md bg-background/80 text-muted-foreground hover:text-primary hover:bg-primary/10 shadow-sm backdrop-blur-sm border border-border/50 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title="Duplicate"
         >
-          <Copy size={14} />
+          <Copy size={13} />
         </button>
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded-md bg-white/80 dark:bg-zinc-900/80 text-zinc-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 shadow-sm backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50 transition-all"
-          title="Delete item"
+          className="p-1.5 rounded-md bg-background/80 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 shadow-sm backdrop-blur-sm border border-border/50 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title="Delete"
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} />
         </button>
       </div>
 
-      {/* Content Area */}
-      <div
-        className={cn(
-          "h-full flex flex-col relative overflow-hidden",
-          item.content.contentType !== "image"
-            ? "pointer-events-none"
-            : "pointer-events-none",
-        )}
-      >
-        {item.content.contentType === "image" ? (
-          <div
-            className="absolute inset-0 w-full h-full bg-zinc-200 dark:bg-zinc-800 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80)`,
-            }}
-          />
-        ) : item.content.contentType === "empty" ? (
-          <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700/50 rounded-lg opacity-50">
-            <span className="text-zinc-400 dark:text-zinc-500 text-sm font-medium tracking-wider uppercase">
-              Empty
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-col h-full overflow-hidden justify-center">
-            <h3 className="font-bold tracking-tight mb-1 @min-[200px]:mb-2 text-base @min-[200px]:text-lg @min-[300px]:text-xl @min-[400px]:text-2xl shrink-0 line-clamp-1 @min-[200px]:line-clamp-2">
-              {item.content.title}
-            </h3>
-            <p className="opacity-80 text-xs @min-[200px]:text-sm @min-[300px]:text-base line-clamp-2 @min-[200px]:line-clamp-3 @min-[300px]:line-clamp-4 @min-[400px]:line-clamp-5">
-              {item.content.description}
-            </p>
-          </div>
-        )}
-      </div>
+      {/* ── Content ── */}
+      <GridItemLayoutRenderer item={item} isPaddingless={isPaddingless} />
 
-      {/* Drag to Resize Handle - Bottom Right */}
+      {/* ── Resize handle ── */}
       <div
         onPointerDown={handleResizePointerDown}
-        className="absolute bottom-1 right-1 w-6 h-6 cursor-se-resize flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 z-100 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute bottom-1 right-1 w-6 h-6 cursor-se-resize flex items-center justify-center text-muted-foreground hover:text-foreground z-50 transition-colors duration-150 opacity-0 group-hover:opacity-100"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
           <circle cx="19" cy="19" r="1.5" />

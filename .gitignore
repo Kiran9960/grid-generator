@@ -23,6 +23,7 @@
 
 # misc
 .DS_Store
+**/.DS_Store
 .vscode/
 .idea/
 .cache/
@@ -30,6 +31,9 @@
 .swc/
 *.pem
 *.log
+*.orig
+*.bak
+*.tmp
 
 # debug
 npm-debug.log*
@@ -39,6 +43,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -46,3 +51,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OS files
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# test / lint caches
+.eslintcache
+.stylelintcache
+/playwright-report/
+/test-results/
+/coverage/
+
+# package manager locks (keep only one)
+# yarn.lock  ← uncomment to ignore if using npm
+# package-lock.json  ← uncomment to ignore if using yarn
+
+# local scripts / scratch files
+scratch.*
+tmp/
+temp/

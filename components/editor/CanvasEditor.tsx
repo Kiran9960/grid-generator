@@ -31,9 +31,9 @@ export function CanvasEditor() {
 
   return (
     <div
-      className="h-full overflow-y-auto overflow-x-auto"
+      className="h-full overflow-y-auto overflow-x-hidden"
       style={{
-        // Dot pattern canvas background — visible in gaps & empty space
+        backgroundColor: 'var(--canvas-bg)',
         backgroundImage: `radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px)`,
         backgroundSize: '20px 20px',
       }}
@@ -42,7 +42,7 @@ export function CanvasEditor() {
       <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-12 lg:px-16 lg:pt-20 lg:pb-16 flex justify-center">
         <div
           className={cn(
-            "w-full mx-auto transition-all duration-500 ease-in-out",
+            "w-full mx-auto transition-all duration-300 ease-out",
             previewMode === 'desktop' ? "max-w-6xl" :
             previewMode === 'tablet' ? "max-w-[768px]" :
             "max-w-[375px]"

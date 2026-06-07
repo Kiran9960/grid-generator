@@ -1,7 +1,10 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
+import { Plus } from "lucide-react"
 import { useGridStore } from "@/store/useGridStore"
 import { GridItemComponent } from "./GridItemComponent"
+import { previewCols, responsiveRowSpan } from "@/lib/responsive"
 import {
   DndContext,
   DragOverlay,
@@ -13,6 +16,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   defaultDropAnimationSideEffects,
+  useDroppable,
 } from '@dnd-kit/core'
 import {
   arrayMove,
@@ -20,13 +24,9 @@ import {
   sortableKeyboardCoordinates,
   SortingStrategy,
 } from '@dnd-kit/sortable'
-import { useDroppable } from '@dnd-kit/core'
 
 // Items stay frozen during drag — only the DragOverlay ghost moves.
-// Reorder commits on drop via handleDragEnd.
 const stableStrategy: SortingStrategy = () => null
-import { useState, useRef, useEffect } from "react"
-import { Plus } from "lucide-react"
 
 
 const chipStyle: React.CSSProperties = {
@@ -48,18 +48,20 @@ function RulerLines({
   rows,
   gap,
   rowHeight,
+  rowHeightAuto,
 }: {
   cols: number
   rows: number
   gap: number
   rowHeight: number
+  rowHeightAuto: boolean
 }) {
   const totalGridH = rows * rowHeight + (rows - 1) * gap
 
   return (
     <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-      {/* Vertical column lines — bleed top/bottom */}
-      <div className="absolute left-0 right-0" style={{ top: -2000, height: totalGridH + 4000 }}>
+      {/* Vertical column lines — always shown, bleed top/bottom */}
+      <div className="absolute left-0 right-0" style={{ top: -2000, height: rowHeightAuto ? 99999 : totalGridH + 4000 }}>
         <div
           className="w-full h-full"
           style={{
@@ -81,27 +83,29 @@ function RulerLines({
         </div>
       </div>
 
-      {/* Horizontal row lines — bleed left/right */}
-      <div className="absolute top-0" style={{ left: -2000, right: -2000, height: totalGridH }}>
-        <div
-          className="w-full h-full"
-          style={{
-            display: 'grid',
-            gridTemplateRows: `repeat(${rows}, ${rowHeight}px)`,
-            rowGap: `${gap}px`,
-          }}
-        >
-          {Array.from({ length: rows }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                borderTop: '1px dashed var(--ruler-line)',
-                borderBottom: i === rows - 1 ? '1px dashed var(--ruler-line)' : 'none',
-              }}
-            />
-          ))}
+      {/* Horizontal row lines — only in fixed-height mode where rows have known height */}
+      {!rowHeightAuto && (
+        <div className="absolute top-0" style={{ left: -2000, right: -2000, height: totalGridH }}>
+          <div
+            className="w-full h-full"
+            style={{
+              display: 'grid',
+              gridTemplateRows: `repeat(${rows}, ${rowHeight}px)`,
+              rowGap: `${gap}px`,
+            }}
+          >
+            {Array.from({ length: rows }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  borderTop: '1px dashed var(--ruler-line)',
+                  borderBottom: i === rows - 1 ? '1px dashed var(--ruler-line)' : 'none',
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -113,11 +117,13 @@ function RulerAnnotations({
   rows,
   gap,
   rowHeight,
+  rowHeightAuto,
 }: {
   cols: number
   rows: number
   gap: number
   rowHeight: number
+  rowHeightAuto: boolean
 }) {
   return (
     <>
@@ -140,17 +146,19 @@ function RulerAnnotations({
         ))}
       </div>
 
-      {/* Row height chip — shown ONCE on the first row only */}
-      <div
-        className="absolute pointer-events-none flex items-center justify-end pr-1"
-        style={{ top: 0, left: -44, width: 40, height: rowHeight }}
-        aria-hidden="true"
-      >
-        <span style={chipStyle}>{rowHeight}px</span>
-      </div>
+      {/* Row height chip — only meaningful in fixed-height mode */}
+      {!rowHeightAuto && (
+        <div
+          className="absolute pointer-events-none flex items-center justify-end pr-1"
+          style={{ top: 0, left: -44, width: 40, height: rowHeight }}
+          aria-hidden="true"
+        >
+          <span style={chipStyle}>{rowHeight}px</span>
+        </div>
+      )}
 
       {/* Gap chip — shown ONCE on the first gap only */}
-      {gap > 0 && rows > 1 && (
+      {gap > 0 && rows > 1 && !rowHeightAuto && (
         <div
           className="absolute pointer-events-none flex items-center justify-end pr-1"
           style={{ top: rowHeight, left: -44, width: 40, height: gap }}
@@ -223,32 +231,105 @@ function GapLines({
   )
 }
 
-// Returns the set of flat cell indices occupied by items (accounting for colSpan)
-function computeOccupiedCells(items: { colSpan?: number }[], cols: number): Set<number> {
-  const occupied = new Set<number>()
-  let col = 0, row = 0
-  for (const item of items) {
-    const span = Math.min(item.colSpan ?? 1, cols)
-    if (col + span > cols) { col = 0; row++ }
-    for (let c = col; c < col + span; c++) {
-      occupied.add(row * cols + c)
-    }
-    col += span
-    if (col >= cols) { col = 0; row++ }
-  }
-  return occupied
+interface GridPlacementItem {
+  id: string
+  row: number
+  col: number
+  rowSpan: number
+  colSpan: number
+  start: number
 }
 
-// Returns IDs of items whose flow position starts at or beyond minRows
-function computeOverflowIds(items: { id: string; colSpan?: number }[], cols: number, minRows: number): Set<string> {
-  const overflow = new Set<string>()
-  let col = 0, row = 0
+function placeGridItems(
+  items: { id: string; colSpan?: number; rowSpan?: number }[],
+  cols: number,
+) {
+  const occupied = new Set<number>()
+  const placedItems: GridPlacementItem[] = []
+  let row = 0
+  let col = 0
+  let maxRow = 0
+
+  const findNextFreeSlot = () => {
+    while (true) {
+      if (col >= cols) {
+        col = 0
+        row++
+      }
+      if (!occupied.has(row * cols + col)) return
+      col++
+    }
+  }
+
   for (const item of items) {
-    const span = Math.min(item.colSpan ?? 1, cols)
-    if (col + span > cols) { col = 0; row++ }
-    if (row >= minRows) overflow.add(item.id)
-    col += span
-    if (col >= cols) { col = 0; row++ }
+    const colSpan = Math.min(Math.max(item.colSpan ?? 1, 1), cols)
+    const rowSpan = Math.max(item.rowSpan ?? 1, 1)
+
+    findNextFreeSlot()
+
+    while (true) {
+      if (col + colSpan > cols) {
+        col = 0
+        row++
+        findNextFreeSlot()
+        continue
+      }
+
+      let fits = true
+      for (let r = row; r < row + rowSpan && fits; r++) {
+        for (let c = col; c < col + colSpan; c++) {
+          if (occupied.has(r * cols + c)) {
+            fits = false
+            break
+          }
+        }
+      }
+
+      if (fits) break
+      col++
+      findNextFreeSlot()
+    }
+
+    const start = row * cols + col
+    placedItems.push({
+      id: item.id,
+      row,
+      col,
+      rowSpan,
+      colSpan,
+      start,
+    })
+
+    for (let r = row; r < row + rowSpan; r++) {
+      for (let c = col; c < col + colSpan; c++) {
+        occupied.add(r * cols + c)
+      }
+      maxRow = Math.max(maxRow, r)
+    }
+
+    col += colSpan
+    if (col >= cols) {
+      col = 0
+      row++
+    }
+  }
+
+  return {
+    occupied,
+    items: placedItems,
+    rows: Math.max(maxRow + 1, 1),
+  }
+}
+
+function computeOverflowIds(
+  placedItems: GridPlacementItem[],
+  minRows: number,
+) {
+  const overflow = new Set<string>()
+  for (const item of placedItems) {
+    if (item.row >= minRows || item.row + item.rowSpan > minRows) {
+      overflow.add(item.id)
+    }
   }
   return overflow
 }
@@ -256,23 +337,19 @@ function computeOverflowIds(items: { id: string; colSpan?: number }[], cols: num
 // Given a target cell index, find the array insertion position that places
 // the dragged item as close to that cell as possible.
 function cellIndexToInsertPosition(
-  items: { id: string; colSpan?: number }[],
+  items: { id: string; colSpan?: number; rowSpan?: number }[],
   dragId: string,
   cellIndex: number,
   cols: number,
 ): number {
-  // Walk items (excluding dragged) to find which slot maps to cellIndex
-  let col = 0, row = 0
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].id === dragId) continue
-    const span = Math.min(items[i].colSpan ?? 1, cols)
-    if (col + span > cols) { col = 0; row++ }
-    const itemStart = row * cols + col
-    if (itemStart >= cellIndex) return i
-    col += span
-    if (col >= cols) { col = 0; row++ }
+  const filtered = items.filter((item) => item.id !== dragId)
+  const { items: placedItems } = placeGridItems(filtered, cols)
+
+  for (let i = 0; i < placedItems.length; i++) {
+    if (placedItems[i].start >= cellIndex) return i
   }
-  return items.length
+
+  return placedItems.length
 }
 
 function DroppableCell({
@@ -307,16 +384,15 @@ function DroppableCell({
       {hovered && isEmpty && !disabled && !isDragActive && (
         <>
           <div
-            className="absolute -top-0.75 -left-0.75 w-1.5 h-1.5 rounded-full z-10 pointer-events-none"
-            style={{ background: 'var(--ruler-line)' }}
+            className="absolute -top-0.75 -left-0.75 w-1.5 h-1.5 rounded-full bg-primary/60 z-10 pointer-events-none"
           />
           <button
-            className="absolute inset-0 m-auto w-9 h-9 rounded-full text-white flex items-center justify-center shadow-xl transition-all duration-150 z-10 cursor-pointer hover:scale-110"
-            style={{ background: 'rgba(244,63,94,0.85)', pointerEvents: 'auto' }}
+            className="absolute inset-0 m-auto w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg transition-all duration-150 z-10 cursor-pointer hover:scale-110 hover:shadow-xl hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ pointerEvents: 'auto' }}
             onClick={() => onAddAt(index)}
             title="Add item here"
           >
-            <Plus size={16} />
+            <Plus size={15} />
           </button>
         </>
       )}
@@ -329,6 +405,7 @@ function CellOverlay({
   rows,
   gap,
   rowHeight,
+  rowHeightAuto,
   onAddAt,
   disabled,
   occupiedCells,
@@ -338,6 +415,7 @@ function CellOverlay({
   rows: number
   gap: number
   rowHeight: number
+  rowHeightAuto: boolean
   onAddAt: (cellIndex: number) => void
   disabled: boolean
   occupiedCells: Set<number>
@@ -350,7 +428,7 @@ function CellOverlay({
         display: 'grid',
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
         gap: `${gap}px`,
-        gridAutoRows: `${rowHeight}px`,
+        gridAutoRows: rowHeightAuto ? 'auto' : `${rowHeight}px`,
         zIndex: 0,
         pointerEvents: 'none',
       }}
@@ -370,18 +448,39 @@ function CellOverlay({
 }
 
 export function GridContainer() {
-  const { columns, gap, rowHeight, items, setItems, previewMode, setSelectedIds, showRulers, showGapLines, minRows, rowHeightAuto } = useGridStore()
+  const { columns, gap, rowHeight, items, setItems, previewMode, setSelectedIds, showRulers, showGapLines, minRows, rowHeightAuto, setMinRows, setColumns } = useGridStore()
   const [activeId, setActiveId] = useState<string | null>(null)
   const gridContainerRef = useRef<HTMLDivElement>(null)
 
-  const activeColumns = previewMode === 'mobile' ? 1
-    : previewMode === 'tablet' ? Math.max(1, Math.floor(columns / 2))
+  // Desktop: always show the full design columns — the canvas is an editor,
+  // not a browser. Fluid scaling applies only to preview modes and exported CSS.
+  // Tablet/Mobile: simulate device widths via proportional column reduction.
+  const activeColumns = previewMode !== 'desktop'
+    ? previewCols(columns, previewMode)
     : columns
 
-  const totalRows = Math.max(
-    Math.ceil(items.reduce((acc, item) => acc + (item.colSpan ?? 1), 0) / activeColumns),
-    minRows
-  )
+  // Scale rowSpans for preview modes so the placement algorithm matches CSS rendering
+  const scaledItems = activeColumns < columns
+    ? items.map(item => ({
+        ...item,
+        rowSpan: responsiveRowSpan(item.rowSpan, columns, activeColumns),
+      }))
+    : items
+
+  const placement = placeGridItems(scaledItems, activeColumns)
+  const actualPlacement = placeGridItems(items, columns)
+  const totalRows = Math.max(placement.rows, minRows)
+
+  useEffect(() => {
+    if (actualPlacement.rows > minRows) {
+      setMinRows(actualPlacement.rows)
+    }
+
+    const maxColSpan = items.reduce((max, item) => Math.max(max, item.colSpan ?? 1), 1)
+    if (maxColSpan > columns) {
+      setColumns(maxColSpan)
+    }
+  }, [actualPlacement.rows, minRows, setMinRows, items, columns, setColumns])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -415,7 +514,7 @@ export function GridContainer() {
 
     useGridStore.setState((state) => ({
       items: reordered,
-      past: [...state.past, { items: state.items, columns: state.columns, gap: state.gap, rowHeight: state.rowHeight }],
+      past: [...state.past, { items: state.items, columns: state.columns, gap: state.gap, rowHeight: state.rowHeight, rowHeightAuto: state.rowHeightAuto }],
       future: [],
       hasChanges: true,
       selectedIds: [active.id as string],
@@ -425,11 +524,13 @@ export function GridContainer() {
   const handleAddAt = (cellIndex: number) => {
     if (items.length >= 12) return
 
-    let cumulative = 0
+    const placement = placeGridItems(items, activeColumns)
     let insertIndex = items.length
-    for (let i = 0; i < items.length; i++) {
-      if (cumulative >= cellIndex) { insertIndex = i; break }
-      cumulative += items[i].colSpan ?? 1
+    for (let i = 0; i < placement.items.length; i++) {
+      if (placement.items[i].start >= cellIndex) {
+        insertIndex = i
+        break
+      }
     }
 
     const newItems = [...items]
@@ -461,8 +562,8 @@ export function GridContainer() {
   const totalGridH = rowHeightAuto
     ? undefined  // height is determined by content when auto
     : totalRows * rowHeight + (totalRows - 1) * gap
-  const occupiedCells = computeOccupiedCells(items, activeColumns)
-  const overflowIds = computeOverflowIds(items, activeColumns, minRows)
+  const occupiedCells = placement.occupied
+  const overflowIds = computeOverflowIds(placement.items, totalRows)
   const activeItem = activeId ? items.find((item) => item.id === activeId) : null
   const isDragActive = activeId !== null
 
@@ -477,18 +578,19 @@ export function GridContainer() {
       <SortableContext items={items.map((item) => item.id)} strategy={stableStrategy}>
         <div
           className="relative w-full transition-all duration-300 ease-in-out"
-          style={{ height: totalGridH ?? undefined, minHeight: rowHeightAuto ? 80 : undefined, backgroundColor: 'var(--ruler-gap)', overflow: 'visible' }}
+          style={{ height: totalGridH ?? undefined, minHeight: rowHeightAuto ? 80 : undefined, overflow: 'visible' }}
         >
           {/* Layer 1: Ruler lines */}
-          {showRulers && !rowHeightAuto && <RulerLines cols={activeColumns} rows={totalRows} gap={gap} rowHeight={rowHeight} />}
+          {showRulers && <RulerLines cols={activeColumns} rows={totalRows} gap={gap} rowHeight={rowHeight} rowHeightAuto={rowHeightAuto} />}
 
           {/* Layer 1b: Measurement chips */}
-          {showRulers && !rowHeightAuto && (
+          {showRulers && (
             <RulerAnnotations
               cols={activeColumns}
               rows={totalRows}
               gap={gap}
               rowHeight={rowHeight}
+              rowHeightAuto={rowHeightAuto}
             />
           )}
 
@@ -501,6 +603,7 @@ export function GridContainer() {
             rows={totalRows}
             gap={gap}
             rowHeight={rowHeight}
+            rowHeightAuto={rowHeightAuto}
             onAddAt={handleAddAt}
             disabled={items.length >= 12}
             occupiedCells={occupiedCells}
@@ -533,25 +636,53 @@ export function GridContainer() {
           sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.15' } } }),
         }}
       >
-        {activeItem && (
-          <div
-            className={[
-              'rounded-xl border-2 border-primary shadow-2xl rotate-1 scale-105 overflow-hidden pointer-events-none',
-              !activeItem.styles.bg.startsWith('#') ? activeItem.styles.bg : '',
-              activeItem.styles.textColor,
-              activeItem.styles.padding,
-            ].join(' ')}
-            style={{
-              backgroundColor: activeItem.styles.bg.startsWith('#') ? activeItem.styles.bg : undefined,
-              opacity: 0.92,
-              width: '100%',
-              height: `${rowHeight * (activeItem.rowSpan ?? 1) + gap * ((activeItem.rowSpan ?? 1) - 1)}px`,
-            }}
-          >
-            <p className="font-bold text-sm leading-tight mb-1 line-clamp-1">{activeItem.content.title}</p>
-            <p className="text-xs opacity-60 line-clamp-2">{activeItem.content.description}</p>
-          </div>
-        )}
+        {activeItem && (() => {
+          const layout = activeItem.content.layout ?? 'text'
+          const isImage = layout.startsWith('image')
+          const isStat = layout === 'stat'
+          const isFeature = layout === 'feature'
+          return (
+            <div
+              className={[
+                'rounded-xl border border-primary/60 shadow-2xl rotate-1 scale-[1.03] overflow-hidden pointer-events-none',
+                !activeItem.styles.bg.startsWith('#') ? activeItem.styles.bg : '',
+                activeItem.styles.textColor,
+                !isImage ? activeItem.styles.padding : 'p-0',
+              ].join(' ')}
+              style={{
+                backgroundColor: activeItem.styles.bg.startsWith('#') ? activeItem.styles.bg : undefined,
+                opacity: 0.93,
+                width: '100%',
+                height: `${rowHeight * (activeItem.rowSpan ?? 1) + gap * ((activeItem.rowSpan ?? 1) - 1)}px`,
+                backdropFilter: 'blur(2px)',
+              }}
+            >
+              {isImage ? (
+                <div
+                  className="w-full h-full bg-cover bg-center"
+                  style={{ backgroundImage: activeItem.content.image ? `url(${activeItem.content.image})` : undefined, backgroundColor: '#18181b' }}
+                />
+              ) : isStat ? (
+                <div className="flex flex-col h-full justify-center">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1 truncate">{activeItem.content.statLabel}</p>
+                  <p className="font-black tracking-tight leading-none text-2xl truncate">{activeItem.content.stat || activeItem.content.title}</p>
+                </div>
+              ) : isFeature ? (
+                <div className="flex flex-col h-full justify-center gap-2">
+                  <span className="text-xl">{activeItem.content.icon || '✦'}</span>
+                  <p className="font-bold text-sm line-clamp-1">{activeItem.content.title}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col h-full justify-center gap-1">
+                  <p className="font-bold text-sm leading-tight line-clamp-2">{activeItem.content.title}</p>
+                  {activeItem.content.description && (
+                    <p className="text-xs opacity-55 line-clamp-2">{activeItem.content.description}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </DragOverlay>
     </DndContext>
   )

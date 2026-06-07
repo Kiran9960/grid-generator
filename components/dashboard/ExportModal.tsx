@@ -3,6 +3,7 @@
 import { useGridStore } from "@/store/useGridStore"
 import { X, Copy, Check } from "lucide-react"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -23,52 +24,22 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
       const rowClass = `row-span-${item.rowSpan}`;
       const styles = item.styles;
       const combinedClasses = `${colClass} ${rowClass} ${styles.bg} ${styles.textColor} ${styles.border} ${styles.shadow} ${styles.padding} ${styles.radius} text-${styles.align}`;
-      
       code += `  {\n`;
       code += `    id: ${index + 1},\n`;
       code += `    contentType: "${item.content.contentType || 'text'}",\n`;
       code += `    title: "${item.content.title}",\n`;
       code += `    description: "${item.content.description}",\n`;
-      if (item.content.image) {
-        code += `    image: "${item.content.image}",\n`;
-      }
+      if (item.content.image) code += `    image: "${item.content.image}",\n`;
       code += `    className: "${combinedClasses}",\n`;
-      if (styles.opacity < 100) {
-        code += `    opacity: ${styles.opacity / 100},\n`;
-      }
+      if (styles.opacity < 100) code += `    opacity: ${styles.opacity / 100},\n`;
       code += `  },\n`;
     });
-    code += `];\n\n`;
-
-    code += `export default function GridLayout() {\n`;
-    code += `  return (\n`;
-    code += `    <div className="grid grid-cols-${columns} gap-[${gap}px] h-full">\n`;
-    code += `      {gridItems.map((item) => (\n`;
-    code += `        <div \n`;
-    code += `          key={item.id} \n`;
-    code += `          className={item.className}\n`;
-    code += `          style={item.opacity ? { opacity: item.opacity } : undefined}\n`;
-    code += `        >\n`;
-    code += `          {item.contentType === 'image' && item.image ? (\n`;
-    code += `            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-lg" />\n`;
-    code += `          ) : (\n`;
-    code += `            <>\n`;
-    code += `              <h3 className="font-bold mb-2">{item.title}</h3>\n`;
-    code += `              <p className="opacity-80">{item.description}</p>\n`;
-    code += `            </>\n`;
-    code += `          )}\n`;
-    code += `        </div>\n`;
-    code += `      ))}\n`;
-    code += `    </div>\n`;
-    code += `  );\n`;
-    code += `}`;
-    
+    code += `];\n\nexport default function GridLayout() {\n  return (\n    <div className="grid grid-cols-${columns} gap-[${gap}px] h-full">\n      {gridItems.map((item) => (\n        <div \n          key={item.id} \n          className={item.className}\n          style={item.opacity ? { opacity: item.opacity } : undefined}\n        >\n          {item.contentType === 'image' && item.image ? (\n            <img src={item.image} alt={item.title} className="w-full h-full object-cover rounded-lg" />\n          ) : (\n            <>\n              <h3 className="font-bold mb-2">{item.title}</h3>\n              <p className="opacity-80">{item.description}</p>\n            </>\n          )}\n        </div>\n      ))}\n    </div>\n  );\n}`;
     return code;
   }
 
   const generateHTMLCode = () => {
     let html = `<div class="grid-container">\n`;
-    
     items.forEach((item, index) => {
       html += `  <div class="grid-item item-${index + 1}">\n`;
       if (item.content.contentType === 'image' && item.content.image) {
@@ -79,97 +50,33 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
       }
       html += `  </div>\n`;
     });
-    
     html += `</div>`;
     return html;
   }
 
   const generateCSSCode = () => {
-    let css = `.grid-container {\n`;
-    css += `  display: grid;\n`;
-    css += `  grid-template-columns: repeat(${columns}, minmax(0, 1fr));\n`;
-    css += `  gap: ${gap}px;\n`;
-    css += `  height: 100%;\n`;
-    css += `}\n\n`;
-    
-    css += `.grid-item {\n`;
-    css += `  padding: 24px;\n`;
-    css += `  border-radius: 12px;\n`;
-    css += `  background-color: #f4f4f5;\n`;
-    css += `  border: 1px solid #e4e4e7;\n`;
-    css += `  font-family: system-ui, -apple-system, sans-serif;\n`;
-    css += `}\n\n`;
-    
-    css += `.grid-item h3 {\n`;
-    css += `  margin-top: 0;\n`;
-    css += `  margin-bottom: 8px;\n`;
-    css += `  font-weight: bold;\n`;
-    css += `}\n\n`;
-    
-    css += `.grid-item p {\n`;
-    css += `  margin: 0;\n`;
-    css += `  opacity: 0.8;\n`;
-    css += `}\n\n`;
-    
-    css += `.grid-item img.item-image {\n`;
-    css += `  width: 100%;\n`;
-    css += `  height: 100%;\n`;
-    css += `  object-fit: cover;\n`;
-    css += `  border-radius: 8px;\n`;
-    css += `}\n\n`;
-    
+    let css = `.grid-container {\n  display: grid;\n  grid-template-columns: repeat(${columns}, minmax(0, 1fr));\n  gap: ${gap}px;\n  height: 100%;\n}\n\n`;
+    css += `.grid-item {\n  padding: 24px;\n  border-radius: 12px;\n  background-color: #f4f4f5;\n  border: 1px solid #e4e4e7;\n  font-family: system-ui, -apple-system, sans-serif;\n}\n\n`;
+    css += `.grid-item h3 {\n  margin-top: 0;\n  margin-bottom: 8px;\n  font-weight: bold;\n}\n\n`;
+    css += `.grid-item p {\n  margin: 0;\n  opacity: 0.8;\n}\n\n`;
+    css += `.grid-item img.item-image {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  border-radius: 8px;\n}\n\n`;
     items.forEach((item, index) => {
-      css += `.item-${index + 1} {\n`;
-      css += `  grid-column: span ${item.colSpan} / span ${item.colSpan};\n`;
-      css += `  grid-row: span ${item.rowSpan} / span ${item.rowSpan};\n`;
-      css += `  text-align: ${item.styles.align};\n`;
-      if (item.styles.opacity < 100) {
-        css += `  opacity: ${item.styles.opacity / 100};\n`;
-      }
+      css += `.item-${index + 1} {\n  grid-column: span ${item.colSpan} / span ${item.colSpan};\n  grid-row: span ${item.rowSpan} / span ${item.rowSpan};\n  text-align: ${item.styles.align};\n`;
+      if (item.styles.opacity < 100) css += `  opacity: ${item.styles.opacity / 100};\n`;
       css += `}\n`;
       if (index < items.length - 1) css += '\n';
     });
-    
     return css;
   }
 
   const generateJSXCode = () => {
-    let jsx = `import React from 'react';\n`;
-    jsx += `import './Grid.css'; // Adjust path as needed\n\n`;
-    
-    jsx += `const gridItems = [\n`;
+    let jsx = `import React from 'react';\nimport './Grid.css';\n\nconst gridItems = [\n`;
     items.forEach((item, index) => {
-      jsx += `  {\n`;
-      jsx += `    id: ${index + 1},\n`;
-      jsx += `    contentType: "${item.content.contentType || 'text'}",\n`;
-      jsx += `    title: "${item.content.title}",\n`;
-      jsx += `    description: "${item.content.description}",\n`;
-      if (item.content.image) {
-        jsx += `    image: "${item.content.image}",\n`;
-      }
-      jsx += `    className: "grid-item item-${index + 1}",\n`;
-      jsx += `  },\n`;
+      jsx += `  {\n    id: ${index + 1},\n    contentType: "${item.content.contentType || 'text'}",\n    title: "${item.content.title}",\n    description: "${item.content.description}",\n`;
+      if (item.content.image) jsx += `    image: "${item.content.image}",\n`;
+      jsx += `    className: "grid-item item-${index + 1}",\n  },\n`;
     });
-    jsx += `];\n\n`;
-
-    jsx += `export default function GridLayout() {\n`;
-    jsx += `  return (\n`;
-    jsx += `    <div className="grid-container">\n`;
-    jsx += `      {gridItems.map((item) => (\n`;
-    jsx += `        <div key={item.id} className={item.className}>\n`;
-    jsx += `          {item.contentType === 'image' && item.image ? (\n`;
-    jsx += `            <img src={item.image} alt={item.title} className="item-image" />\n`;
-    jsx += `          ) : (\n`;
-    jsx += `            <>\n`;
-    jsx += `              <h3>{item.title}</h3>\n`;
-    jsx += `              <p>{item.description}</p>\n`;
-    jsx += `            </>\n`;
-    jsx += `          )}\n`;
-    jsx += `        </div>\n`;
-    jsx += `      ))}\n`;
-    jsx += `    </div>\n`;
-    jsx += `  );\n`;
-    jsx += `}`;
+    jsx += `];\n\nexport default function GridLayout() {\n  return (\n    <div className="grid-container">\n      {gridItems.map((item) => (\n        <div key={item.id} className={item.className}>\n          {item.contentType === 'image' && item.image ? (\n            <img src={item.image} alt={item.title} className="item-image" />\n          ) : (\n            <>\n              <h3>{item.title}</h3>\n              <p>{item.description}</p>\n            </>\n          )}\n        </div>\n      ))}\n    </div>\n  );\n}`;
     return jsx;
   }
 
@@ -177,9 +84,7 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
   const cssGridCode = `<!-- HTML -->\n${generateHTMLCode()}\n\n/* CSS */\n${generateCSSCode()}`;
   const jsxCode = `/* JSX (Save as GridLayout.jsx) */\n${generateJSXCode()}\n\n/* CSS (Save as Grid.css) */\n${generateCSSCode()}`;
 
-  let currentCode = tailwindCode;
-  if (activeTab === 'css') currentCode = cssGridCode;
-  else if (activeTab === 'jsx') currentCode = jsxCode;
+  const currentCode = activeTab === 'css' ? cssGridCode : activeTab === 'jsx' ? jsxCode : tailwindCode;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(currentCode);
@@ -187,69 +92,75 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const TABS = [
+    { id: 'tailwind' as const, label: 'Tailwind + React' },
+    { id: 'css' as const, label: 'CSS Grid' },
+    { id: 'jsx' as const, label: 'React + CSS' },
+  ]
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
-        
+      <div className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">Export Code</h2>
-          <button 
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface/50">
+          <h2 className="text-base font-semibold text-foreground">Export Code</h2>
+          <button
             onClick={onClose}
-            className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors duration-150 cursor-pointer"
+            aria-label="Close modal"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 px-4">
-          <button
-            onClick={() => setActiveTab('tailwind')}
-            className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'tailwind' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}
-          >
-            Tailwind + React
-          </button>
-          <button
-            onClick={() => setActiveTab('css')}
-            className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'css' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}
-          >
-            CSS Grid (HTML/CSS)
-          </button>
-          <button
-            onClick={() => setActiveTab('jsx')}
-            className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'jsx' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'}`}
-          >
-            React (JSX + CSS)
-          </button>
+        <div className="flex border-b border-border bg-muted/30 px-5">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "py-3 px-4 text-sm font-medium border-b-2 transition-colors duration-150 cursor-pointer",
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-4 bg-zinc-50 dark:bg-zinc-950 relative group">
+        {/* Code area */}
+        <div className="flex-1 overflow-auto p-4 bg-muted/20 relative">
           <button
             onClick={handleCopy}
-            className="absolute top-6 right-6 p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md shadow-sm text-zinc-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2 text-xs font-medium opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="absolute top-6 right-6 z-10 px-3 py-1.5 bg-background border border-border rounded-md shadow-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors duration-150 flex items-center gap-1.5 text-xs font-medium cursor-pointer"
           >
-            {copied ? <><Check size={14} className="text-emerald-500" /> Copied</> : <><Copy size={14} /> Copy to Clipboard</>}
+            {copied
+              ? <><Check size={13} className="text-green-500" /> Copied</>
+              : <><Copy size={13} /> Copy</>
+            }
           </button>
-          <pre className="text-sm font-mono text-zinc-800 dark:text-zinc-300 bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
+          <pre className="text-sm font-mono text-foreground bg-background p-5 rounded-lg border border-border overflow-x-auto leading-relaxed">
             <code>{currentCode}</code>
           </pre>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-end bg-white dark:bg-zinc-900">
-          <button 
+        <div className="px-5 py-4 border-t border-border flex justify-end gap-2 bg-background">
+          <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors duration-150 cursor-pointer"
           >
             Close
           </button>
-          <button 
+          <button
             onClick={handleCopy}
-            className="ml-3 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+            className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors duration-150 flex items-center gap-2 cursor-pointer"
           >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? <Check size={15} /> : <Copy size={15} />}
             {copied ? "Copied!" : "Copy Code"}
           </button>
         </div>

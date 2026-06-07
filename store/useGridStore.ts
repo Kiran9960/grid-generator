@@ -1,12 +1,31 @@
 import { create } from 'zustand';
 import { LAYOUT_PRESETS } from '@/lib/presets';
 
+export type GridItemLayout =
+  | 'text'
+  | 'hero'
+  | 'image-full'
+  | 'image-top'
+  | 'image-bottom'
+  | 'image-left'
+  | 'image-right'
+  | 'image-overlay'
+  | 'stat'
+  | 'feature'
+
 export interface GridItemContent {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   icon?: string;
   image?: string;
   contentType?: 'text' | 'image' | 'empty';
+  layout?: GridItemLayout;
+  ctaText?: string;
+  ctaSecondaryText?: string;
+  badge?: string;
+  stat?: string;
+  statLabel?: string;
+  statTrend?: string;
 }
 
 export interface GridItemStyles {
@@ -34,6 +53,7 @@ export interface GridStateSnapshot {
   columns: number;
   gap: number;
   rowHeight: number;
+  rowHeightAuto: boolean;
   items: GridItem[];
 }
 
@@ -76,6 +96,7 @@ export interface GridState extends GridStateSnapshot {
   toggleRulers: () => void;
   toggleGapLines: () => void;
   setMinRows: (rows: number) => void;
+  setRowHeightAuto: (enabled: boolean) => void;
   toggleRowHeightAuto: () => void;
 
   // History
@@ -148,6 +169,7 @@ const getSnapshot = (state: GridState): GridStateSnapshot => ({
   columns: state.columns,
   gap: state.gap,
   rowHeight: state.rowHeight,
+  rowHeightAuto: state.rowHeightAuto,
   items: state.items,
 });
 
@@ -160,7 +182,7 @@ export const useGridStore = create<GridState>((set, get) => ({
   past: [],
   future: [],
   previewMode: 'desktop',
-  theme: 'light',
+  theme: 'dark',
   isSidebarOpen: false,
   activeCategory: 'hero-sections',
   hasChanges: false,
@@ -168,7 +190,7 @@ export const useGridStore = create<GridState>((set, get) => ({
   showRulers: true,
   showGapLines: true,
   minRows: 4,
-  rowHeightAuto: false,
+  rowHeightAuto: true,
 
   saveSnapshot: () => set((state) => {
     const currentSnapshot = getSnapshot(state);
@@ -304,6 +326,7 @@ export const useGridStore = create<GridState>((set, get) => ({
       columns: presetColumns,
       gap: presetGap,
       rowHeight: presetRowHeight,
+      rowHeightAuto: false,
       selectedIds: [], 
       hasChanges: false,
       categoryStates: newCategoryStates 
@@ -319,5 +342,6 @@ export const useGridStore = create<GridState>((set, get) => ({
   toggleRulers: () => set((state) => ({ showRulers: !state.showRulers })),
   toggleGapLines: () => set((state) => ({ showGapLines: !state.showGapLines })),
   setMinRows: (minRows) => set({ minRows }),
+  setRowHeightAuto: (rowHeightAuto) => set({ rowHeightAuto }),
   toggleRowHeightAuto: () => set((state) => ({ rowHeightAuto: !state.rowHeightAuto })),
 }));
