@@ -34,7 +34,7 @@ export default function DashboardPage() {
       <TopToolbar />
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         <LeftSidebar />
-        <main className="flex-1 overflow-hidden bg-muted/30 relative">
+        <main className="flex-1 min-w-0 overflow-hidden bg-muted/30 relative">
           <CanvasEditor />
         </main>
         <RightProperties />
