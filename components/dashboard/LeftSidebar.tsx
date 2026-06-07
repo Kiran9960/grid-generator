@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import {
-  ChevronDown, X,
+  ChevronDown, ChevronLeft, X,
   LayoutDashboard, LayoutTemplate, User, Users,
   Box, FileText, Image as ImageIcon, LayoutList, CheckSquare, ShoppingCart,
 } from "lucide-react"
@@ -212,8 +212,20 @@ export function LeftSidebar() {
         "hidden lg:flex h-full w-55 shrink-0 border-r border-border bg-background transition-all duration-300 overflow-hidden",
         !isSidebarOpen && "lg:w-0 lg:border-r-0"
       )}>
-        <div className="w-55 shrink-0 h-full">
-          <SidebarContent />
+        <div className="w-55 shrink-0 h-full flex flex-col">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/50 select-none pl-1">Templates</span>
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors cursor-pointer"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft size={15} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <SidebarContent />
+          </div>
         </div>
       </div>
 
