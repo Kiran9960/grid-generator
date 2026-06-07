@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { TopToolbar } from "@/components/dashboard/TopToolbar"
+import { TopToolbar, MobileBottomBar } from "@/components/dashboard/TopToolbar"
 import { LeftSidebar } from "@/components/dashboard/LeftSidebar"
 import { RightProperties } from "@/components/dashboard/RightProperties"
 import { CanvasEditor } from "@/components/editor/CanvasEditor"
@@ -34,11 +34,12 @@ export default function DashboardPage() {
       <TopToolbar />
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         <LeftSidebar />
-        <main className="flex-1 min-w-0 overflow-hidden bg-muted/30 relative">
+        <main className="flex-1 min-w-0 overflow-hidden bg-muted/30 relative pb-14 lg:pb-0">
           <CanvasEditor />
         </main>
         <RightProperties />
       </div>
+      <MobileBottomBar />
     </div>
   )
 }

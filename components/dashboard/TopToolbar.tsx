@@ -45,6 +45,47 @@ function Stepper({
   )
 }
 
+export function MobileBottomBar() {
+  const {
+    previewMode, setPreviewMode,
+    columns, setColumns,
+    gap, setGap,
+    minRows, setMinRows,
+  } = useGridStore()
+
+  return (
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border h-14 flex items-center justify-between px-4 gap-3">
+      {/* Steppers */}
+      <div className="flex items-center gap-2.5">
+        <Stepper icon={<Columns3 size={13} />} label="Columns" value={columns} min={1} max={24} onChange={setColumns} />
+        <div className="w-px h-4 bg-border" />
+        <Stepper icon={<Rows3 size={13} />} label="Rows" value={minRows} min={1} max={20} onChange={setMinRows} />
+        <div className="w-px h-4 bg-border" />
+        <Stepper icon={<SeparatorHorizontal size={13} />} label="Gap" value={gap} min={0} max={64} step={4} unit="px" onChange={setGap} />
+      </div>
+
+      {/* Preview mode */}
+      <div className="flex items-center gap-0.5 bg-muted p-1 rounded-lg border border-border shrink-0">
+        {(['desktop', 'tablet', 'mobile'] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setPreviewMode(mode)}
+            className={cn(
+              "p-1.5 rounded-md transition-colors focus-visible:outline-none",
+              previewMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+            title={mode.charAt(0).toUpperCase() + mode.slice(1)}
+          >
+            {mode === 'desktop' && <Monitor size={15} />}
+            {mode === 'tablet'  && <Tablet   size={15} />}
+            {mode === 'mobile'  && <Smartphone size={15} />}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function TopToolbar() {
   const {
     undo, redo, past, future,
