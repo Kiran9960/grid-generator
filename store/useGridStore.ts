@@ -183,7 +183,7 @@ export const useGridStore = create<GridState>((set, get) => ({
   future: [],
   previewMode: 'desktop',
   theme: 'dark',
-  isSidebarOpen: false,
+  isSidebarOpen: true,
   activeCategory: 'hero-sections',
   hasChanges: false,
   categoryStates: {},

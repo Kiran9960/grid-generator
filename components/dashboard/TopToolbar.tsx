@@ -87,7 +87,7 @@ export function TopToolbar() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="lg:hidden p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Menu size={20} />
             </button>

@@ -208,8 +208,13 @@ export function LeftSidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex h-full w-55 shrink-0 border-r border-border bg-background">
-        <SidebarContent />
+      <div className={cn(
+        "hidden lg:flex h-full w-55 shrink-0 border-r border-border bg-background transition-all duration-300 overflow-hidden",
+        !isSidebarOpen && "lg:w-0 lg:border-r-0"
+      )}>
+        <div className="w-55 shrink-0 h-full">
+          <SidebarContent />
+        </div>
       </div>
 
       {/* Mobile sidebar */}
