@@ -72,7 +72,7 @@ export function TopToolbar() {
         textColor: 'text-foreground',
         border: 'border-border',
         shadow: 'shadow-none',
-        padding: 'p-6',
+        padding: 'p-10',
         align: 'left',
         radius: 'rounded-2xl',
         opacity: 100

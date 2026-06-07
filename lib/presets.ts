@@ -45,10 +45,10 @@ const SURFACE = '#1C1C1E'   // secondarySystemBackground
 const RAISED  = '#2C2C2E'   // tertiarySystemBackground
 const BLACK   = '#000000'   // systemBackground
 
-// Padding scale — "sm" default for compact cards, step up only when rowSpan > 1
-const SM  = 'p-5'   // 20px — 1-row stat / feature cards
-const MD  = 'p-6'   // 24px — 2-row hero / text cards
-const LG  = 'p-8'   // 32px — large showcase cards (3+ rows)
+// Padding scale — all cards use XL (p-10 = 40px) by default
+const SM  = 'p-10'
+const MD  = 'p-10'
+const LG  = 'p-10'
 const IMG = 'p-0'   // image-full / image-overlay
 
 function img(id: string) { return `${UNS}/${id}?w=1200&q=85` }
@@ -58,7 +58,7 @@ function img(id: string) { return `${UNS}/${id}?w=1200&q=85` }
 
 const saas1: LayoutPreset = {
   id: 'saas-1', name: 'Analytics Bento', categoryId: 'saas',
-  columns: 12, gap: 16, rowHeight: 130,
+  columns: 12, gap: 8, rowHeight: 130,
   items: [
     {
       id: 's1-1', colSpan: 5, rowSpan: 2,
@@ -110,7 +110,7 @@ const saas1: LayoutPreset = {
 
 const saas2: LayoutPreset = {
   id: 'saas-2', name: 'Product Dashboard', categoryId: 'saas',
-  columns: 12, gap: 20, rowHeight: 140,
+  columns: 12, gap: 8, rowHeight: 140,
   items: [
     {
       id: 's2-1', colSpan: 8, rowSpan: 2,
@@ -154,7 +154,7 @@ const saas2: LayoutPreset = {
 
 const portfolio1: LayoutPreset = {
   id: 'portfolio-1', name: 'Creative Bento', categoryId: 'portfolio',
-  columns: 12, gap: 16, rowHeight: 140,
+  columns: 12, gap: 8, rowHeight: 140,
   items: [
     {
       id: 'p1-1', colSpan: 6, rowSpan: 2,
@@ -196,7 +196,7 @@ const portfolio1: LayoutPreset = {
 
 const portfolio2: LayoutPreset = {
   id: 'portfolio-2', name: 'Minimal Bio', categoryId: 'portfolio',
-  columns: 12, gap: 20, rowHeight: 150,
+  columns: 12, gap: 8, rowHeight: 150,
   items: [
     {
       id: 'p2-1', colSpan: 12, rowSpan: 2,
@@ -240,7 +240,7 @@ const portfolio2: LayoutPreset = {
 
 const social1: LayoutPreset = {
   id: 'social-1', name: 'Creator Profile', categoryId: 'social',
-  columns: 12, gap: 16, rowHeight: 130,
+  columns: 12, gap: 8, rowHeight: 130,
   items: [
     {
       id: 'so1-1', colSpan: 4, rowSpan: 2,
@@ -284,7 +284,7 @@ const social1: LayoutPreset = {
 
 const ai1: LayoutPreset = {
   id: 'ai-1', name: 'AI Hero Bento', categoryId: 'ai',
-  columns: 12, gap: 18, rowHeight: 130,
+  columns: 12, gap: 8, rowHeight: 130,
   items: [
     {
       id: 'ai1-1', colSpan: 8, rowSpan: 2,
@@ -328,7 +328,7 @@ const ai1: LayoutPreset = {
 
 const team1: LayoutPreset = {
   id: 'team-1', name: 'Meet the Team', categoryId: 'team',
-  columns: 12, gap: 16, rowHeight: 150,
+  columns: 12, gap: 8, rowHeight: 150,
   items: [
     {
       id: 'tm1-0', colSpan: 12, rowSpan: 2,
@@ -377,7 +377,7 @@ const team1: LayoutPreset = {
 
 const casestudy1: LayoutPreset = {
   id: 'cs-1', name: 'Impact Story', categoryId: 'casestudy',
-  columns: 12, gap: 20, rowHeight: 140,
+  columns: 12, gap: 8, rowHeight: 140,
   items: [
     {
       id: 'cs1-1', colSpan: 12, rowSpan: 2,
@@ -416,7 +416,7 @@ const casestudy1: LayoutPreset = {
 
 const blog1: LayoutPreset = {
   id: 'blog-1', name: 'Editorial Hero', categoryId: 'blog',
-  columns: 12, gap: 16, rowHeight: 140,
+  columns: 12, gap: 8, rowHeight: 140,
   items: [
     {
       id: 'bl1-1', colSpan: 8, rowSpan: 3,
@@ -460,7 +460,7 @@ const blog1: LayoutPreset = {
 
 const ecommerce1: LayoutPreset = {
   id: 'ecom-1', name: 'Product Showcase', categoryId: 'ecommerce',
-  columns: 12, gap: 16, rowHeight: 140,
+  columns: 12, gap: 8, rowHeight: 140,
   items: [
     {
       id: 'ec1-1', colSpan: 6, rowSpan: 4,
@@ -504,7 +504,7 @@ const ecommerce1: LayoutPreset = {
 
 const gallery1: LayoutPreset = {
   id: 'gal-1', name: 'Photo Mosaic', categoryId: 'gallery',
-  columns: 12, gap: 12, rowHeight: 100,
+  columns: 12, gap: 8, rowHeight: 100,
   items: [
     {
       id: 'gal1-1', colSpan: 5, rowSpan: 4,
@@ -548,7 +548,7 @@ const gallery1: LayoutPreset = {
 
 const productivity1: LayoutPreset = {
   id: 'prod-1', name: 'Work Dashboard', categoryId: 'productivity',
-  columns: 12, gap: 16, rowHeight: 125,
+  columns: 12, gap: 8, rowHeight: 125,
   items: [
     {
       id: 'pr1-1', colSpan: 4, rowSpan: 1,

@@ -175,7 +175,7 @@ const getSnapshot = (state: GridState): GridStateSnapshot => ({
 
 export const useGridStore = create<GridState>((set, get) => ({
   columns: 12,
-  gap: 16, // px
+  gap: 8, // px
   rowHeight: 120, // px
   items: defaultItems,
   selectedIds: [],
