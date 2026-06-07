@@ -132,13 +132,11 @@ export function responsiveSpan(
  */
 const RESPONSIVE_PADDING: Record<string, string> = {
   'p-0':  'p-0',
-  'p-2':  'p-1.5 @min-[200px]:p-2',
-  'p-3':  'p-2 @min-[200px]:p-2.5 @min-[300px]:p-3',
-  'p-4':  'p-2 @min-[160px]:p-2.5 @min-[240px]:p-3 @min-[340px]:p-4',
-  'p-5':  'p-2.5 @min-[160px]:p-3 @min-[240px]:p-4 @min-[340px]:p-5',
-  'p-6':  'p-3 @min-[160px]:p-3.5 @min-[240px]:p-4 @min-[340px]:p-5 @min-[480px]:p-6',
-  'p-8':  'p-3 @min-[160px]:p-4 @min-[240px]:p-5 @min-[340px]:p-6 @min-[480px]:p-8',
-  'p-10': 'p-3 @min-[160px]:p-4 @min-[240px]:p-5 @min-[340px]:p-6 @min-[480px]:p-8 @min-[600px]:p-10',
+  'p-1':  'p-1',                                                                                         // XS  4px — always fixed, too small to scale
+  'p-2':  'p-1.5 @min-[200px]:p-2',                                                                     // SM  8px
+  'p-4':  'p-2 @min-[160px]:p-2.5 @min-[240px]:p-3 @min-[340px]:p-4',                                  // MD  16px
+  'p-6':  'p-2.5 @min-[160px]:p-3 @min-[240px]:p-4 @min-[340px]:p-5 @min-[480px]:p-6',                 // LG  24px
+  'p-10': 'p-3 @min-[160px]:p-4 @min-[240px]:p-5 @min-[340px]:p-6 @min-[480px]:p-8 @min-[600px]:p-10', // XL  40px
 }
 
 export function responsivePadding(paddingClass: string): string {

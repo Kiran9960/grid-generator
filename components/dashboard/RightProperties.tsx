@@ -9,12 +9,12 @@ import type { GridItemLayout } from "@/store/useGridStore"
 import { ImagePicker } from "@/components/editor/ImagePicker"
 
 const PADDING_OPTIONS = [
-  { label: 'None', value: 'p-0' },
-  { label: 'XS', value: 'p-2' },
-  { label: 'SM', value: 'p-4' },
-  { label: 'MD', value: 'p-6' },
-  { label: 'LG', value: 'p-8' },
-  { label: 'XL', value: 'p-10' },
+  { label: 'None', value: 'p-0',  px: '0px'  },
+  { label: 'XS',   value: 'p-1',  px: '4px'  },
+  { label: 'SM',   value: 'p-2',  px: '8px'  },
+  { label: 'MD',   value: 'p-4',  px: '16px' },
+  { label: 'LG',   value: 'p-6',  px: '24px' },
+  { label: 'XL',   value: 'p-10', px: '40px' },
 ]
 
 export function RightProperties() {
@@ -250,23 +250,34 @@ export function RightProperties() {
           </div>
 
           {/* Padding */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Padding</h3>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Padding</h3>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {PADDING_OPTIONS.find(o => o.value === selectedItem.styles.padding)?.px ?? '—'}
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-1.5">
-              {PADDING_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => updateItem(selectedItem.id, { styles: { ...selectedItem.styles, padding: opt.value } })}
-                  className={cn(
-                    "py-1.5 rounded-md text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    selectedItem.styles.padding === opt.value
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "bg-muted text-muted-foreground border-border hover:text-foreground hover:border-border/80"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {PADDING_OPTIONS.map((opt) => {
+                const isActive = selectedItem.styles.padding === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => updateItem(selectedItem.id, { styles: { ...selectedItem.styles, padding: opt.value } })}
+                    className={cn(
+                      "flex flex-col items-center gap-0.5 py-2 rounded-lg border transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isActive
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "bg-muted/50 border-border text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-muted"
+                    )}
+                  >
+                    <span className="text-[12px] font-semibold leading-none">{opt.label}</span>
+                    <span className={cn("text-[10px] leading-none font-mono", isActive ? "text-primary/70" : "text-muted-foreground/60")}>
+                      {opt.px}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>

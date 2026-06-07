@@ -45,10 +45,10 @@ const SURFACE = '#1C1C1E'   // secondarySystemBackground
 const RAISED  = '#2C2C2E'   // tertiarySystemBackground
 const BLACK   = '#000000'   // systemBackground
 
-// Padding scale — all cards use XL (p-10 = 40px) by default
-const SM  = 'p-10'
-const MD  = 'p-10'
-const LG  = 'p-10'
+// Padding scale — aligned to design tokens (xs=4 sm=8 md=16 lg=24 xl=40)
+const SM  = 'p-4'   // MD 16px — compact stat/feature cards
+const MD  = 'p-6'   // LG 24px — standard 2-row cards
+const LG  = 'p-10'  // XL 40px — large hero/showcase cards
 const IMG = 'p-0'   // image-full / image-overlay
 
 function img(id: string) { return `${UNS}/${id}?w=1200&q=85` }
